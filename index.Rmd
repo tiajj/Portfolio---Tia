@@ -19,6 +19,424 @@ Overall, I don't see any limitations or gaps in the chosen corpus. If I were to 
 
 Some typical tracks from my corpus include "Sweet Child o' Mine" by Guns N' Roses, "Smells Like Teen Spirit" by Nirvana, or "How You Remind Me" by Nickelback, as these are considered to be perfect representation of the genre at the stage of their decade. On the other hand, some atypical tracks would be "Wonderwall" by Oasis or "Feel Good Inc." by Gorillaz seeing as these are tracks that deviate from the mainstream trends and offer a more unique or experimental approach to the genre.
 
+Under the hood of some of the world's most famous chords {.storyboard}
+=========================================
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+library(tidyverse)
+library(spotifyr)
+library(compmus)
+library(ggplot2)
+library(dplyr)
+library(conflicted)
+library(forcats)
+library(lubridate)
+library(purrr)
+library(readr)
+library(stringr)
+library(tibble)
+library(tidyr)
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+circshift <- function(v, n) {
+  if (n == 0) v else c(tail(v, n), head(v, -n))
+}
+
+#      C     C#    D     Eb    E     F     F#    G     Ab    A     Bb    B
+major_chord <-
+  c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    0,    0)
+minor_chord <-
+  c(   1,    0,    0,    1,    0,    0,    0,    1,    0,    0,    0,    0)
+seventh_chord <-
+  c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    1,    0)
+
+major_key <-
+  c(6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88)
+minor_key <-
+  c(6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17)
+
+chord_templates <-
+  tribble(
+    ~name, ~template,
+    "Gb:7", circshift(seventh_chord, 6),
+    "Gb:maj", circshift(major_chord, 6),
+    "Bb:min", circshift(minor_chord, 10),
+    "Db:maj", circshift(major_chord, 1),
+    "F:min", circshift(minor_chord, 5),
+    "Ab:7", circshift(seventh_chord, 8),
+    "Ab:maj", circshift(major_chord, 8),
+    "C:min", circshift(minor_chord, 0),
+    "Eb:7", circshift(seventh_chord, 3),
+    "Eb:maj", circshift(major_chord, 3),
+    "G:min", circshift(minor_chord, 7),
+    "Bb:7", circshift(seventh_chord, 10),
+    "Bb:maj", circshift(major_chord, 10),
+    "D:min", circshift(minor_chord, 2),
+    "F:7", circshift(seventh_chord, 5),
+    "F:maj", circshift(major_chord, 5),
+    "A:min", circshift(minor_chord, 9),
+    "C:7", circshift(seventh_chord, 0),
+    "C:maj", circshift(major_chord, 0),
+    "E:min", circshift(minor_chord, 4),
+    "G:7", circshift(seventh_chord, 7),
+    "G:maj", circshift(major_chord, 7),
+    "B:min", circshift(minor_chord, 11),
+    "D:7", circshift(seventh_chord, 2),
+    "D:maj", circshift(major_chord, 2),
+    "F#:min", circshift(minor_chord, 6),
+    "A:7", circshift(seventh_chord, 9),
+    "A:maj", circshift(major_chord, 9),
+    "C#:min", circshift(minor_chord, 1),
+    "E:7", circshift(seventh_chord, 4),
+    "E:maj", circshift(major_chord, 4),
+    "G#:min", circshift(minor_chord, 8),
+    "B:7", circshift(seventh_chord, 11),
+    "B:maj", circshift(major_chord, 11),
+    "D#:min", circshift(minor_chord, 3)
+  )
+
+key_templates <-
+  tribble(
+    ~name, ~template,
+    "Gb:maj", circshift(major_key, 6),
+    "Bb:min", circshift(minor_key, 10),
+    "Db:maj", circshift(major_key, 1),
+    "F:min", circshift(minor_key, 5),
+    "Ab:maj", circshift(major_key, 8),
+    "C:min", circshift(minor_key, 0),
+    "Eb:maj", circshift(major_key, 3),
+    "G:min", circshift(minor_key, 7),
+    "Bb:maj", circshift(major_key, 10),
+    "D:min", circshift(minor_key, 2),
+    "F:maj", circshift(major_key, 5),
+    "A:min", circshift(minor_key, 9),
+    "C:maj", circshift(major_key, 0),
+    "E:min", circshift(minor_key, 4),
+    "G:maj", circshift(major_key, 7),
+    "B:min", circshift(minor_key, 11),
+    "D:maj", circshift(major_key, 2),
+    "F#:min", circshift(minor_key, 6),
+    "A:maj", circshift(major_key, 9),
+    "C#:min", circshift(minor_key, 1),
+    "E:maj", circshift(major_key, 4),
+    "G#:min", circshift(minor_key, 8),
+    "B:maj", circshift(major_key, 11),
+    "D#:min", circshift(minor_key, 3)
+  )
+
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+get_tidy_audio_analysis("37ZJ0p5Jm13JPevGcx4SkF?si=9e905a922153474b")
+
+livingonaprayer <-
+  get_tidy_audio_analysis("37ZJ0p5Jm13JPevGcx4SkF?si=9e905a922153474b") |>
+  compmus_align(sections, segments) |>
+  select(sections) |>
+  unnest(sections) |>
+  mutate(
+    pitches =
+      map(segments,
+          compmus_summarise, pitches,
+          method = "mean", norm = "manhattan"
+      )
+  )
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+livingonaprayer |> 
+  compmus_match_pitch_template(
+    chord_templates,         
+    method = "euclidean",  
+    norm = "manhattan"     
+  ) |>
+  ggplot(
+    aes(x = start + duration / 2, width = duration, y = name, fill = d)
+  ) +
+  geom_tile() +
+  scale_fill_viridis_c(guide = "none") +
+  theme_minimal() +
+  labs(x = "Time (s)", y = "")
+
+```
+
+***
+"Livin' On A Prayer" by Bon Jovi is not only one of the most famous songs the band has made, but it is one of the most famous songs of all time. It features a distinctive chord progression that is both recognizable and iconic in the realm of rock music. 
+
+
+Keys as beautiful as a soft November Rain {.storyboard}
+=========================================
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+library(tidyverse)
+library(spotifyr)
+library(compmus)
+library(ggplot2)
+library(dplyr)
+library(conflicted)
+library(forcats)
+library(lubridate)
+library(purrr)
+library(readr)
+library(stringr)
+library(tibble)
+library(tidyr)
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+circshift <- function(v, n) {
+  if (n == 0) v else c(tail(v, n), head(v, -n))
+}
+
+#      C     C#    D     Eb    E     F     F#    G     Ab    A     Bb    B
+major_chord <-
+  c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    0,    0)
+minor_chord <-
+  c(   1,    0,    0,    1,    0,    0,    0,    1,    0,    0,    0,    0)
+seventh_chord <-
+  c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    1,    0)
+
+major_key <-
+  c(6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88)
+minor_key <-
+  c(6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17)
+
+chord_templates <-
+  tribble(
+    ~name, ~template,
+    "Gb:7", circshift(seventh_chord, 6),
+    "Gb:maj", circshift(major_chord, 6),
+    "Bb:min", circshift(minor_chord, 10),
+    "Db:maj", circshift(major_chord, 1),
+    "F:min", circshift(minor_chord, 5),
+    "Ab:7", circshift(seventh_chord, 8),
+    "Ab:maj", circshift(major_chord, 8),
+    "C:min", circshift(minor_chord, 0),
+    "Eb:7", circshift(seventh_chord, 3),
+    "Eb:maj", circshift(major_chord, 3),
+    "G:min", circshift(minor_chord, 7),
+    "Bb:7", circshift(seventh_chord, 10),
+    "Bb:maj", circshift(major_chord, 10),
+    "D:min", circshift(minor_chord, 2),
+    "F:7", circshift(seventh_chord, 5),
+    "F:maj", circshift(major_chord, 5),
+    "A:min", circshift(minor_chord, 9),
+    "C:7", circshift(seventh_chord, 0),
+    "C:maj", circshift(major_chord, 0),
+    "E:min", circshift(minor_chord, 4),
+    "G:7", circshift(seventh_chord, 7),
+    "G:maj", circshift(major_chord, 7),
+    "B:min", circshift(minor_chord, 11),
+    "D:7", circshift(seventh_chord, 2),
+    "D:maj", circshift(major_chord, 2),
+    "F#:min", circshift(minor_chord, 6),
+    "A:7", circshift(seventh_chord, 9),
+    "A:maj", circshift(major_chord, 9),
+    "C#:min", circshift(minor_chord, 1),
+    "E:7", circshift(seventh_chord, 4),
+    "E:maj", circshift(major_chord, 4),
+    "G#:min", circshift(minor_chord, 8),
+    "B:7", circshift(seventh_chord, 11),
+    "B:maj", circshift(major_chord, 11),
+    "D#:min", circshift(minor_chord, 3)
+  )
+
+key_templates <-
+  tribble(
+    ~name, ~template,
+    "Gb:maj", circshift(major_key, 6),
+    "Bb:min", circshift(minor_key, 10),
+    "Db:maj", circshift(major_key, 1),
+    "F:min", circshift(minor_key, 5),
+    "Ab:maj", circshift(major_key, 8),
+    "C:min", circshift(minor_key, 0),
+    "Eb:maj", circshift(major_key, 3),
+    "G:min", circshift(minor_key, 7),
+    "Bb:maj", circshift(major_key, 10),
+    "D:min", circshift(minor_key, 2),
+    "F:maj", circshift(major_key, 5),
+    "A:min", circshift(minor_key, 9),
+    "C:maj", circshift(major_key, 0),
+    "E:min", circshift(minor_key, 4),
+    "G:maj", circshift(major_key, 7),
+    "B:min", circshift(minor_key, 11),
+    "D:maj", circshift(major_key, 2),
+    "F#:min", circshift(minor_key, 6),
+    "A:maj", circshift(major_key, 9),
+    "C#:min", circshift(minor_key, 1),
+    "E:maj", circshift(major_key, 4),
+    "G#:min", circshift(minor_key, 8),
+    "B:maj", circshift(major_key, 11),
+    "D#:min", circshift(minor_key, 3)
+  )
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+novemberrain <-
+  get_tidy_audio_analysis("3YRCqOhFifThpSRFJ1VWFM?si=fba96e4ef0d94883") |>
+  compmus_align(sections, segments) |>
+  select(sections) |>
+  unnest(sections) |>
+  mutate(
+    pitches =
+      map(segments,
+          compmus_summarise, pitches,
+          method = "mean", norm = "manhattan"
+      )
+  )
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+novemberrain |> 
+  compmus_match_pitch_template(
+    key_templates,         
+    method = "euclidean",  
+    norm = "manhattan"     
+  ) |>
+  ggplot(
+    aes(x = start + duration / 2, width = duration, y = name, fill = d)
+  ) +
+  geom_tile() +
+  scale_fill_viridis_c(guide = "none") +
+  theme_minimal() +
+  labs(x = "Time (s)", y = "")
+```
+
+***
+"November Rain" by Guns'N'Roses is a song who's keys are so distinct they can be indetified anywhere, anytime, by anyone. "Novemeber Rain" incorporates various key changes and modulations throughout the song, and analyzing the key changes in a keygram can reveal the song's overall tonal journey, highlighting key moments and transitions that contribute to its emotional impact.
+
+ Deciphering the Keys to the Decades {.storyboard}
+=========================================
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+library(tidyverse)
+library(spotifyr)
+library(compmus)
+library(ggplot2)
+library(dplyr)
+library(conflicted)
+library(forcats)
+library(lubridate)
+library(purrr)
+library(readr)
+library(stringr)
+library(tibble)
+library(tidyr)
+library(hrbrthemes)
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+eightys <- get_playlist_audio_features("", "7wFHQHyooUBgtrPqW3iGzk?si=324313907b804876")
+ninetys <- get_playlist_audio_features("", "1CkbyHSuvnAXdosoBW6Vm0?si=9814498c432f487e")
+twothousands <- get_playlist_audio_features("", "7IeVftpjOptptIDThtx3rd?si=833a8a98a01e48f2")
+
+corpus <-
+  bind_rows(
+    eightys |> mutate(category = "80s"),
+    ninetys |> mutate(category = "90s"),
+    twothousands |> mutate(category = "00s")
+  )
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+corpus %>%
+  ggplot(aes(x = key_name, fill = category)) +
+  geom_bar(stat = "count", position = "dodge") +  
+  labs(title = "Histogram of Keys by Decade", x = "Key", y = "Frequency") +
+  scale_fill_manual(values = c("Group A" = "blue", "Group B" = "red", "Group C" = "green")) +
+  facet_wrap(~category, scales = "free") 
+```
+
+***
+Using this visualisation, we can see the most popular keys used in each decade of rock music. An interesting takeway from this is while they stay similar throughout the decade, there are slight differences we can spot.
+
+Tempo throught the Times {.storyboard}
+=========================================
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+library(tidyverse)
+library(spotifyr)
+library(compmus)
+library(ggplot2)
+library(dplyr)
+library(conflicted)
+library(forcats)
+library(lubridate)
+library(purrr)
+library(readr)
+library(stringr)
+library(tibble)
+library(tidyr)
+library(hrbrthemes)
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+eightys <-
+  get_playlist_audio_features(
+    "",
+    "7wFHQHyooUBgtrPqW3iGzk?si=b182e4f2d7b7444c"
+  ) |>
+  slice(1:30) |>
+  add_audio_analysis()
+ninetys <-
+  get_playlist_audio_features(
+    "",
+    "1CkbyHSuvnAXdosoBW6Vm0?si=a25d611128c54f8c"
+  ) |>
+  slice(1:30) |>
+  add_audio_analysis()
+twothousands <-
+  get_playlist_audio_features(
+    "",
+    "7IeVftpjOptptIDThtx3rd?si=0ae8238ab6c148fc"
+  ) |>
+  slice(1:30) |>
+  add_audio_analysis()
+
+corpus <- eightys %>%
+  mutate(genre = "Eighties") %>%
+  bind_rows(ninetys %>% mutate(genre = "Nineties")) %>%
+  bind_rows(twothousands %>% mutate(genre = "Two Thousands"))
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+corpus |>
+  mutate(
+    sections =
+      map(
+        sections,                                    
+        summarise_at,
+        vars(tempo, loudness, duration),             
+        list(section_mean = mean, section_sd = sd)   
+      )
+  ) |>
+  unnest(sections) |>
+  ggplot(
+    aes(
+      x = tempo,
+      y = tempo_section_sd,
+      colour = genre,
+      alpha = loudness
+    )
+  ) +
+  geom_point(aes(size = duration / 60)) +
+  geom_rug() +
+  theme_minimal() +
+  ylim(0, 5) +
+  labs(
+    x = "Mean Tempo (bpm)",
+    y = "SD Tempo",
+    colour = "Genre",
+    size = "Duration (min)",
+    alpha = "Volume (dBFS)"
+  )
+```
+
+***
+
+With this visualisation, we can compare the songs in the corpus from all three decades in regards to their tempo. 
+
 
  The American Idiot shines as bright as a star {.storyboard}
 =========================================
