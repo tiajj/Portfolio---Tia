@@ -3,6 +3,7 @@
 title: "Rock Through The Ages"
 output: 
   flexdashboard::flex_dashboard:
+    theme: spacelab
 
 ---
 
@@ -18,6 +19,338 @@ Through this corpus, I expect the themes between decades to be quite similar, as
 Overall, I don't see any limitations or gaps in the chosen corpus. If I were to potentially expand it, I would expect gaps in lesser known artists, or covers of known songs, but in the already selected corpus with limited tracks, I didn't face any obstacles with gaps in Spotify.
 
 Some typical tracks from my corpus include "Sweet Child o' Mine" by Guns N' Roses, "Smells Like Teen Spirit" by Nirvana, or "How You Remind Me" by Nickelback, as these are considered to be perfect representation of the genre at the stage of their decade. On the other hand, some atypical tracks would be "Wonderwall" by Oasis or "Feel Good Inc." by Gorillaz seeing as these are tracks that deviate from the mainstream trends and offer a more unique or experimental approach to the genre.
+
+
+Exploring the #1 Beats {.storyboard}
+=========================================
+
+### Introduction
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+```
+
+The following board will show you the tempogram analysis if all the number 1 songs in this corpus. This includes but is not limited to number 1 tempo, number 1 energy, number 1 speechiness, and much more!
+
+
+### Back in Black Beats
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+library(tidyverse)
+library(spotifyr)
+library(compmus)
+library(ggplot2)
+library(dplyr)
+library(conflicted)
+library(forcats)
+library(lubridate)
+library(purrr)
+library(readr)
+library(stringr)
+library(tibble)
+library(tidyr)
+library(hrbrthemes)
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+get_tidy_audio_analysis("08mG3Y1vljYA6bvDt4Wqkj?si=3cd7395d4db7470f")
+
+backinblack <- get_tidy_audio_analysis("08mG3Y1vljYA6bvDt4Wqkj?si=3cd7395d4db7470f")
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+
+backinblack |>
+  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+```
+
+***
+
+According to Spotify's API, the song with the highest tempo variable in my corpus is "Back in Black" by ACDC.You can see on the tempogram that it's pretty steady at about 90 BPM, but the yellow spreads accross at about 210 seconds. At this time, you can hear the guitar come in for a segment as the lead instrument, changing the tempo for a little bit, as can be visualised on the tempogram.
+
+
+
+### Deciphering Decibels
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+library(tidyverse)
+library(spotifyr)
+library(compmus)
+library(ggplot2)
+library(dplyr)
+library(conflicted)
+library(forcats)
+library(lubridate)
+library(purrr)
+library(readr)
+library(stringr)
+library(tibble)
+library(tidyr)
+library(hrbrthemes)
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+get_tidy_audio_analysis("6nTiIhLmQ3FWhvrGafw2zj?si=fe3cb4c509684754")
+
+americanidiot <- get_tidy_audio_analysis("6nTiIhLmQ3FWhvrGafw2zj?si=fe3cb4c509684754")
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+americanidiot |>
+  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+```
+
+***
+
+"American Idiot" by Greenday is not only the most energetic in my corpus, but it's also the loudest. Due to it being an outlier in not one, but two important variables, I expected this to manifest in some way in the tempogram. However, aside from a couple of minor bumps, the tempo stays stable at around 95 BPM throughout the song.
+
+### Rhythm Royalty
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+library(tidyverse)
+library(spotifyr)
+library(compmus)
+library(ggplot2)
+library(dplyr)
+library(conflicted)
+library(forcats)
+library(lubridate)
+library(purrr)
+library(readr)
+library(stringr)
+library(tibble)
+library(tidyr)
+library(hrbrthemes)
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+get_tidy_audio_analysis("5vdp5UmvTsnMEMESIF2Ym7?si=ea9b733c9eaa4e11")
+
+anotheronebitesthedust <- get_tidy_audio_analysis("5vdp5UmvTsnMEMESIF2Ym7?si=ea9b733c9eaa4e11")
+
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+anotheronebitesthedust |>
+  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+```
+
+***
+
+Queen truly is Rhythm Royalty by making the most danceable song in my corpus, "Another One Bites The Dust". With an average of about 110 BPM, we see some movement away from the average at about 80 seconds, lasting 20-25 seconds. At this point in the song, it's the second time the chorus comes around and the peak of the song, which is when the iconic beat of "Another One Bites The Dust" come up and switches up the tempo. The chorus (and this beat) come around two more times in the song, the first at around 40 seconds, which is when we see the first slight movement of yellow in the tempogram, and the third at about 150 seconds, we see bigger movement, but not as much as the peak of the song.
+
+### Rocking the Joy
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+library(tidyverse)
+library(spotifyr)
+library(compmus)
+library(ggplot2)
+library(dplyr)
+library(conflicted)
+library(forcats)
+library(lubridate)
+library(purrr)
+library(readr)
+library(stringr)
+library(tibble)
+library(tidyr)
+library(hrbrthemes)
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+get_tidy_audio_analysis("2Cdvbe2G4hZsnhNMKyGrie?si=b0459310742f4609")
+
+iloverocknroll <- get_tidy_audio_analysis("2Cdvbe2G4hZsnhNMKyGrie?si=b0459310742f4609")
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+iloverocknroll |>
+  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+
+```
+
+***
+
+Joan Jett & The Blackhearts must have been rocking with joy while making "I Love Rock 'N Roll" because that song has the highest valence found in my corpus. The song doesn’t have a stable tempo, but it mostly ranges between 80-85 BPM to 100 BPM. However, there are some interesting outlier moments that are interesting to look into. The first stands at around 14 seconds, where we see a spread of the yellow, rather than the normal range. When listening to the song, 14 seconds is where we move from the introduction beat to the guitar riff that really starts the song. Another outlier moment we can see on the tempogram is at 100 seconds, which in the song corresponds to the start of a segment of the song with a focal point on the guitar. The last outlier moment worth noting is at 125 seconds, which, in the song, indicates the start of the a cappella section in the "I Love Rock 'N Roll".
+
+### Tempo in concert
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+library(tidyverse)
+library(spotifyr)
+library(compmus)
+library(ggplot2)
+library(dplyr)
+library(conflicted)
+library(forcats)
+library(lubridate)
+library(purrr)
+library(readr)
+library(stringr)
+library(tibble)
+library(tidyr)
+library(hrbrthemes)
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+get_tidy_audio_analysis("6YSwWeCnDXEbQ7M2SA0GF8?si=00e7908516cc47be")
+
+galwaygirl <- get_tidy_audio_analysis("6YSwWeCnDXEbQ7M2SA0GF8?si=00e7908516cc47be")
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+galwaygirl |>
+  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+
+```
+
+***
+
+Another variable the Spotify API measures is the "liveness" of the song, where they measure the presence of an audience. The one with the highest liveness in my corpus is "Galway Girl" by Mundy, which makes sense since it's the only live recording in the corpus. As you can see, the tempogram gives us a few moments to note that move away from the general 95 BPM. At 100 seconds, you can see on the tempogram the yellow line suddenly drop, that's because at that time, the beat slows down for the singer to speak to his audience at the concert, and for them to sing. The yellow line then goes back up to it's original sport at 130 seconds, when the beat picks up and the singer continues singing. A similar phenomenon happens where after the beat drops to a quiet moment in the song which cna be seen by the second drop of the yellow line, it picks up to a very high energy high BPM at 190 seconds, which is visualised by the yellow being spread all over the tempogram.
+
+### Spoken Grooves
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+library(tidyverse)
+library(spotifyr)
+library(compmus)
+library(ggplot2)
+library(dplyr)
+library(conflicted)
+library(forcats)
+library(lubridate)
+library(purrr)
+library(readr)
+library(stringr)
+library(tibble)
+library(tidyr)
+library(hrbrthemes)
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+get_tidy_audio_analysis("0d28khcov6AiegSCpG5TuT?si=e04d61dbcc284d9b")
+
+feelgoodinc <- get_tidy_audio_analysis("0d28khcov6AiegSCpG5TuT?si=e04d61dbcc284d9b")
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+feelgoodinc |>
+  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+
+
+```
+
+***
+
+A song Spotify deemed had the highest speechiness in my corpus is "Feel Good Inc" by Gorillaz. From the tempogram, we can see the tempo is pretty stable at 140 BPM. We see some movement with the yellow spreading out at around 135 seconds, which is manifested due to a new section of the song where the beat slows down and the instruments sound softer, which leads up to a a slow build up in the song.
+
+### Need the Most Instrumental Tempo tonight
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+library(tidyverse)
+library(spotifyr)
+library(compmus)
+library(ggplot2)
+library(dplyr)
+library(conflicted)
+library(forcats)
+library(lubridate)
+library(purrr)
+library(readr)
+library(stringr)
+library(tibble)
+library(tidyr)
+library(hrbrthemes)
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+get_tidy_audio_analysis("3h04eZTnmFLRMjZajbrp2R?si=94e2ab32a16343a2")
+
+needyoutonight <- get_tidy_audio_analysis("3h04eZTnmFLRMjZajbrp2R?si=94e2ab32a16343a2")
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+needyoutonight |>
+  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+
+```
+
+***
+
+Following up on the song with the highest speechiness, "Need You Tonight" by INXS had the highest instrumentalness, according to the Spotify API. My expectations of the tempogram included some movement of the tempo due to the different "feel" of different segments of the song. In reality, the tempogram shows a steady tempo throughout the whole song at around 110 BPM. After seeing the tempogram and listening ot the song again, I see that this makes sense because although the "feel" of some sections is different, the background instruments and beat stays the same throughout the song.
+
+### Tempo Unplugged
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+library(tidyverse)
+library(spotifyr)
+library(compmus)
+library(ggplot2)
+library(dplyr)
+library(conflicted)
+library(forcats)
+library(lubridate)
+library(purrr)
+library(readr)
+library(stringr)
+library(tibble)
+library(tidyr)
+library(hrbrthemes)
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+get_tidy_audio_analysis("4UzVcXufOhGUwF56HT7b8M?si=b0b631ebc72a40d1")
+
+myimmortal <- get_tidy_audio_analysis("4UzVcXufOhGUwF56HT7b8M?si=b0b631ebc72a40d1")
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+myimmortal |>
+  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+```
+
+***
+Last but certainly not least, this song was the corpus' most acoustic song, "My Immortal" by Evanescence. As you can see on the tempogram, the yellow is spread all over the graph, making it harder than the rest to analyse the tempo. Nonetheless, we can see that the average tempo of the song rests between 140 and 160 BPM, varying in this bracket. We can see a significant drop in empo at around 80 seconds, which is when the singer takes a breath and the song quiets down for a few seconds.
 
 Under the hood of some of the world's most famous chords {.storyboard}
 =========================================
