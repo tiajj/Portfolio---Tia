@@ -20,6 +20,217 @@ Overall, I don't see any limitations or gaps in the chosen corpus. If I were to 
 
 Some typical tracks from my corpus include "Sweet Child o' Mine" by Guns N' Roses, "Smells Like Teen Spirit" by Nirvana, or "How You Remind Me" by Nickelback, as these are considered to be perfect representation of the genre at the stage of their decade. On the other hand, some atypical tracks would be "Wonderwall" by Oasis or "Feel Good Inc." by Gorillaz seeing as these are tracks that deviate from the mainstream trends and offer a more unique or experimental approach to the genre.
 
+Clusters {.storyboard}
+=========================================
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+library(tidyverse)
+library(spotifyr)
+library(compmus)
+library(ggplot2)
+library(dplyr)
+library(conflicted)
+library(forcats)
+library(lubridate)
+library(purrr)
+library(readr)
+library(stringr)
+library(tibble)
+library(tidyr)
+library(hrbrthemes)
+library(tidymodels)
+library(heatmaply)
+library(ggdendro)
+``` 
+
+### 80s clusters
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+eightys <-
+  get_playlist_audio_features("", "7wFHQHyooUBgtrPqW3iGzk?si=88ef7f81898f4442") |>
+  add_audio_analysis() |>
+  mutate(
+    segments = map2(segments, key, compmus_c_transpose),
+    pitches =
+      map(segments,
+          compmus_summarise, pitches,
+          method = "mean", norm = "manhattan"
+      ),
+    timbre =
+      map(
+        segments,
+        compmus_summarise, timbre,
+        method = "mean"
+      )
+  ) |>
+  mutate(pitches = map(pitches, compmus_normalise, "clr")) |>
+  mutate_at(vars(pitches, timbre), map, bind_rows) |>
+  unnest(cols = c(pitches, timbre))
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+eightys_juice <-
+  recipe(
+    track.name ~
+      danceability +
+      energy +
+      loudness +
+      speechiness +
+      acousticness +
+      instrumentalness +
+      liveness +
+      valence +
+      tempo,
+    data = eightys
+  ) |>
+  step_center(all_predictors()) |>
+  step_scale(all_predictors()) |> 
+  prep(eightys |> mutate(track.name = str_trunc(track.name, 20))) |>
+  juice() |>
+  column_to_rownames("track.name")
+
+eightys_dist <- dist(eightys_juice, method = "euclidean")
+
+heatmaply(
+  eightys_juice,
+  hclustfun = hclust,
+  hclust_method = "average",  
+  dist_method = "euclidean"
+)
+```
+
+***
+
+This is a dendrogram accompanied by a heat map to better illustrate the hierarchical clustering of the 80s playlist from my corpus. It is no surprise that loudness and liveness are clustered together, with energy coming in further, but I was surprised to see that danceability and instrumentalness were clustered together, with valence not far away.
+
+
+
+### 90s clusters
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+ninetys <-
+  get_playlist_audio_features("", "1CkbyHSuvnAXdosoBW6Vm0?si=99e5c95982204339") |>
+  add_audio_analysis() |>
+  mutate(
+    segments = map2(segments, key, compmus_c_transpose),
+    pitches =
+      map(segments,
+          compmus_summarise, pitches,
+          method = "mean", norm = "manhattan"
+      ),
+    timbre =
+      map(
+        segments,
+        compmus_summarise, timbre,
+        method = "mean"
+      )
+  ) |>
+  mutate(pitches = map(pitches, compmus_normalise, "clr")) |>
+  mutate_at(vars(pitches, timbre), map, bind_rows) |>
+  unnest(cols = c(pitches, timbre))
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+ninetys_juice <-
+  recipe(
+    track.name ~
+      danceability +
+      energy +
+      loudness +
+      speechiness +
+      acousticness +
+      instrumentalness +
+      liveness +
+      valence +
+      tempo,
+    data = ninetys
+  ) |>
+  step_center(all_predictors()) |>
+  step_scale(all_predictors()) |> 
+  prep(ninetys |> mutate(track.name = str_trunc(track.name, 20))) |>
+  juice() |>
+  column_to_rownames("track.name")
+
+ninetys_dist <- dist(ninetys_juice, method = "euclidean")
+
+heatmaply(
+  ninetys_juice,
+  hclustfun = hclust,
+  hclust_method = "average",  
+  dist_method = "euclidean"
+)
+
+```
+***
+ 
+This is a dendrogram accompanied by a heat map to better illustrate the hierarchical clustering of the 90s playlist from my corpus. It is no surprise that loudness and energy are closely clustered together, but I was surprised to see that tempo and speechiness were clustered together, being not too far away from the first two we mentioned. 
+
+The two features furthest apart are instrumentalness and tempo, which makes sense because the song "November Rain" is the most instrumentak and one of the slowest in tempo.
+
+
+### 00s clusters
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+twothousands <-
+  get_playlist_audio_features("", "7IeVftpjOptptIDThtx3rd?si=89d9a161d21c4ce8") |>
+  add_audio_analysis() |>
+  mutate(
+    segments = map2(segments, key, compmus_c_transpose),
+    pitches =
+      map(segments,
+          compmus_summarise, pitches,
+          method = "mean", norm = "manhattan"
+      ),
+    timbre =
+      map(
+        segments,
+        compmus_summarise, timbre,
+        method = "mean"
+      )
+  ) |>
+  mutate(pitches = map(pitches, compmus_normalise, "clr")) |>
+  mutate_at(vars(pitches, timbre), map, bind_rows) |>
+  unnest(cols = c(pitches, timbre))
+```
+
+```{r,echo=FALSE, fig.width=10, fig.height=7}
+twothousands_juice <-
+  recipe(
+    track.name ~
+      danceability +
+      energy +
+      loudness +
+      speechiness +
+      acousticness +
+      instrumentalness +
+      liveness +
+      valence +
+      tempo,
+    data = twothousands
+  ) |>
+  step_center(all_predictors()) |>
+  step_scale(all_predictors()) |> 
+  prep(twothousands |> mutate(track.name = str_trunc(track.name, 20))) |>
+  juice() |>
+  column_to_rownames("track.name")
+
+twothousands_dist <- dist(twothousands_juice, method = "euclidean")
+
+heatmaply(
+  twothousands_juice,
+  hclustfun = hclust,
+  hclust_method = "average",  
+  dist_method = "euclidean"
+)
+
+```
+***
+
+
+This is a dendrogram accompanied by a heat map to better illustrate the hierarchical clustering of the 00s playlist from my corpus. It is no surprise that loudness and energy are clustered together, with tempo coming in further.
+
+The two features furthest apart are energy and acousticness, which can be illustrated by the song "My Immortal" which is the highest in acousticness and lowest in energy.
+
 
 Exploring the #1 Beats {.storyboard}
 =========================================
@@ -52,7 +263,6 @@ library(hrbrthemes)
 ```
 
 ```{r,echo=FALSE, fig.width=10, fig.height=7}
-get_tidy_audio_analysis("08mG3Y1vljYA6bvDt4Wqkj?si=3cd7395d4db7470f")
 
 backinblack <- get_tidy_audio_analysis("08mG3Y1vljYA6bvDt4Wqkj?si=3cd7395d4db7470f")
 ```
@@ -94,7 +304,6 @@ library(hrbrthemes)
 ```
 
 ```{r,echo=FALSE, fig.width=10, fig.height=7}
-get_tidy_audio_analysis("6nTiIhLmQ3FWhvrGafw2zj?si=fe3cb4c509684754")
 
 americanidiot <- get_tidy_audio_analysis("6nTiIhLmQ3FWhvrGafw2zj?si=fe3cb4c509684754")
 ```
@@ -133,7 +342,6 @@ library(hrbrthemes)
 ```
 
 ```{r,echo=FALSE, fig.width=10, fig.height=7}
-get_tidy_audio_analysis("5vdp5UmvTsnMEMESIF2Ym7?si=ea9b733c9eaa4e11")
 
 anotheronebitesthedust <- get_tidy_audio_analysis("5vdp5UmvTsnMEMESIF2Ym7?si=ea9b733c9eaa4e11")
 
@@ -173,7 +381,6 @@ library(hrbrthemes)
 ```
 
 ```{r,echo=FALSE, fig.width=10, fig.height=7}
-get_tidy_audio_analysis("2Cdvbe2G4hZsnhNMKyGrie?si=b0459310742f4609")
 
 iloverocknroll <- get_tidy_audio_analysis("2Cdvbe2G4hZsnhNMKyGrie?si=b0459310742f4609")
 ```
@@ -213,7 +420,6 @@ library(hrbrthemes)
 ```
 
 ```{r,echo=FALSE, fig.width=10, fig.height=7}
-get_tidy_audio_analysis("6YSwWeCnDXEbQ7M2SA0GF8?si=00e7908516cc47be")
 
 galwaygirl <- get_tidy_audio_analysis("6YSwWeCnDXEbQ7M2SA0GF8?si=00e7908516cc47be")
 ```
@@ -253,7 +459,6 @@ library(hrbrthemes)
 ```
 
 ```{r,echo=FALSE, fig.width=10, fig.height=7}
-get_tidy_audio_analysis("0d28khcov6AiegSCpG5TuT?si=e04d61dbcc284d9b")
 
 feelgoodinc <- get_tidy_audio_analysis("0d28khcov6AiegSCpG5TuT?si=e04d61dbcc284d9b")
 ```
@@ -294,7 +499,6 @@ library(hrbrthemes)
 ```
 
 ```{r,echo=FALSE, fig.width=10, fig.height=7}
-get_tidy_audio_analysis("3h04eZTnmFLRMjZajbrp2R?si=94e2ab32a16343a2")
 
 needyoutonight <- get_tidy_audio_analysis("3h04eZTnmFLRMjZajbrp2R?si=94e2ab32a16343a2")
 ```
@@ -334,7 +538,6 @@ library(hrbrthemes)
 ```
 
 ```{r,echo=FALSE, fig.width=10, fig.height=7}
-get_tidy_audio_analysis("4UzVcXufOhGUwF56HT7b8M?si=b0b631ebc72a40d1")
 
 myimmortal <- get_tidy_audio_analysis("4UzVcXufOhGUwF56HT7b8M?si=b0b631ebc72a40d1")
 ```
@@ -461,7 +664,6 @@ key_templates <-
 ```
 
 ```{r,echo=FALSE, fig.width=10, fig.height=7}
-get_tidy_audio_analysis("37ZJ0p5Jm13JPevGcx4SkF?si=9e905a922153474b")
 
 livingonaprayer <-
   get_tidy_audio_analysis("37ZJ0p5Jm13JPevGcx4SkF?si=9e905a922153474b") |>
@@ -784,7 +986,6 @@ library(conflicted)
 ```
 
 ```{r,echo=FALSE, fig.width=10, fig.height=7}
-get_tidy_audio_analysis("6nTiIhLmQ3FWhvrGafw2zj?si=e0fdcac6a10e48c4")
 
 
 americanidiot <-
@@ -842,9 +1043,6 @@ library(dplyr)
 library(ggplot2)
 ```
 ```{r,echo=FALSE, fig.width=10, fig.height=7}
-get_tidy_audio_analysis("7ygpwy2qP3NbrxVkHvUhXY?si=3e98096edbf84a7a")
-
-
 
 wonderwall <-
   get_tidy_audio_analysis("7ygpwy2qP3NbrxVkHvUhXY?si=3e98096edbf84a7a") |> 
@@ -899,9 +1097,6 @@ library(dplyr)
 library(ggplot2)
 ```
 ```{r,echo=FALSE, fig.width=10, fig.height=7}
-get_tidy_audio_analysis("7ygpwy2qP3NbrxVkHvUhXY?si=3e98096edbf84a7a")
-
-
 
 wonderwall <-
   get_tidy_audio_analysis("7ygpwy2qP3NbrxVkHvUhXY?si=3e98096edbf84a7a") |> 
@@ -957,10 +1152,6 @@ library(dplyr)
 library(ggplot2)
 ```
 ```{r,echo=FALSE, fig.width=10, fig.height=7}
-get_tidy_audio_analysis("4CeeEOM32jQcH3eN9Q2dGj?si=d7d6bf42c9504ab0")
-
-
-
 teenspirit <-
   get_tidy_audio_analysis("4CeeEOM32jQcH3eN9Q2dGj?si=d7d6bf42c9504ab0") |> 
   compmus_align(beats, segments) |>                     
@@ -1014,10 +1205,6 @@ library(dplyr)
 library(ggplot2)
 ```
 ```{r,echo=FALSE, fig.width=10, fig.height=7}
-get_tidy_audio_analysis("4CeeEOM32jQcH3eN9Q2dGj?si=d7d6bf42c9504ab0")
-
-
-
 teenspirit <-
   get_tidy_audio_analysis("4CeeEOM32jQcH3eN9Q2dGj?si=d7d6bf42c9504ab0") |> 
   compmus_align(beats, segments) |>                     
@@ -1174,7 +1361,6 @@ library(conflicted)
 ```
 
 ```{r,echo=FALSE, fig.width=10, fig.height=7}
-get_tidy_audio_analysis("2Cdvbe2G4hZsnhNMKyGrie?si=ea353a7b64f24f6e")
 
 rocknroll <-
   get_tidy_audio_analysis("2Cdvbe2G4hZsnhNMKyGrie?si=ea353a7b64f24f6e") |>
