@@ -1,29 +1,14 @@
-
 ---
 title: "Rock Through The Ages"
 output: 
   flexdashboard::flex_dashboard:
-    theme: spacelab
-
+    orientation: columns
+    vertical_layout: fill
+    self_contained: false
 ---
 
- How does rock music change over the years? {.storyboard}
-=========================================
-```{r}
-``` 
-
-The corpus I chose to be represented in my final assignment is a comparison of rock music from the 80s, 90s and 2000s. The rock genre is my favourite across the decades and looking into what ties them together and sets them apart is interesting to me. The natural comparison point in this corpus would be the genre, separated by the decade, specifically the 80s, 90s, and early 2000s. 
-
-Through this corpus, I expect the themes between decades to be quite similar, as no matter the year, the rock genre stands for certain messages that won't change, such as themes of rebellion, social commentary, and personal struggles across all three decades. However, I expect the musical style to differ between the decades, making the 90s have more energy than the 80s, and the 2000s even more than the 90s. 
-
-Overall, I don't see any limitations or gaps in the chosen corpus. If I were to potentially expand it, I would expect gaps in lesser known artists, or covers of known songs, but in the already selected corpus with limited tracks, I didn't face any obstacles with gaps in Spotify.
-
-Some typical tracks from my corpus include "Sweet Child o' Mine" by Guns N' Roses, "Smells Like Teen Spirit" by Nirvana, or "How You Remind Me" by Nickelback, as these are considered to be perfect representation of the genre at the stage of their decade. On the other hand, some atypical tracks would be "Wonderwall" by Oasis or "Feel Good Inc." by Gorillaz seeing as these are tracks that deviate from the mainstream trends and offer a more unique or experimental approach to the genre.
-
-Clusters {.storyboard}
-=========================================
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
+```{r setup, include=FALSE}
+library(flexdashboard)
 library(tidyverse)
 library(spotifyr)
 library(compmus)
@@ -41,11 +26,825 @@ library(hrbrthemes)
 library(tidymodels)
 library(heatmaply)
 library(ggdendro)
-``` 
+```
 
-### 80s clusters
+```{r, include=FALSE}
+eightys <- get_playlist_audio_features("", "7wFHQHyooUBgtrPqW3iGzk?si=324313907b804876")
+ninetys <- get_playlist_audio_features("", "1CkbyHSuvnAXdosoBW6Vm0?si=9814498c432f487e")
+twothousands <- get_playlist_audio_features("", "7IeVftpjOptptIDThtx3rd?si=833a8a98a01e48f2")
+
+corpus <-
+  bind_rows(
+    eightys |> mutate(category = "80s"),
+    ninetys |> mutate(category = "90s"),
+    twothousands |> mutate(category = "00s")
+)
+```
+
+```{r,echo=FALSE}
+circshift <- function(v, n) {
+  if (n == 0) v else c(tail(v, n), head(v, -n))
+}
+
+#      C     C#    D     Eb    E     F     F#    G     Ab    A     Bb    B
+major_chord <-
+  c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    0,    0)
+minor_chord <-
+  c(   1,    0,    0,    1,    0,    0,    0,    1,    0,    0,    0,    0)
+seventh_chord <-
+  c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    1,    0)
+
+major_key <-
+  c(6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88)
+minor_key <-
+  c(6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17)
+
+chord_templates <-
+  tribble(
+    ~name, ~template,
+    "Gb:7", circshift(seventh_chord, 6),
+    "Gb:maj", circshift(major_chord, 6),
+    "Bb:min", circshift(minor_chord, 10),
+    "Db:maj", circshift(major_chord, 1),
+    "F:min", circshift(minor_chord, 5),
+    "Ab:7", circshift(seventh_chord, 8),
+    "Ab:maj", circshift(major_chord, 8),
+    "C:min", circshift(minor_chord, 0),
+    "Eb:7", circshift(seventh_chord, 3),
+    "Eb:maj", circshift(major_chord, 3),
+    "G:min", circshift(minor_chord, 7),
+    "Bb:7", circshift(seventh_chord, 10),
+    "Bb:maj", circshift(major_chord, 10),
+    "D:min", circshift(minor_chord, 2),
+    "F:7", circshift(seventh_chord, 5),
+    "F:maj", circshift(major_chord, 5),
+    "A:min", circshift(minor_chord, 9),
+    "C:7", circshift(seventh_chord, 0),
+    "C:maj", circshift(major_chord, 0),
+    "E:min", circshift(minor_chord, 4),
+    "G:7", circshift(seventh_chord, 7),
+    "G:maj", circshift(major_chord, 7),
+    "B:min", circshift(minor_chord, 11),
+    "D:7", circshift(seventh_chord, 2),
+    "D:maj", circshift(major_chord, 2),
+    "F#:min", circshift(minor_chord, 6),
+    "A:7", circshift(seventh_chord, 9),
+    "A:maj", circshift(major_chord, 9),
+    "C#:min", circshift(minor_chord, 1),
+    "E:7", circshift(seventh_chord, 4),
+    "E:maj", circshift(major_chord, 4),
+    "G#:min", circshift(minor_chord, 8),
+    "B:7", circshift(seventh_chord, 11),
+    "B:maj", circshift(major_chord, 11),
+    "D#:min", circshift(minor_chord, 3)
+  )
+
+key_templates <-
+  tribble(
+    ~name, ~template,
+    "Gb:maj", circshift(major_key, 6),
+    "Bb:min", circshift(minor_key, 10),
+    "Db:maj", circshift(major_key, 1),
+    "F:min", circshift(minor_key, 5),
+    "Ab:maj", circshift(major_key, 8),
+    "C:min", circshift(minor_key, 0),
+    "Eb:maj", circshift(major_key, 3),
+    "G:min", circshift(minor_key, 7),
+    "Bb:maj", circshift(major_key, 10),
+    "D:min", circshift(minor_key, 2),
+    "F:maj", circshift(major_key, 5),
+    "A:min", circshift(minor_key, 9),
+    "C:maj", circshift(major_key, 0),
+    "E:min", circshift(minor_key, 4),
+    "G:maj", circshift(major_key, 7),
+    "B:min", circshift(minor_key, 11),
+    "D:maj", circshift(major_key, 2),
+    "F#:min", circshift(minor_key, 6),
+    "A:maj", circshift(major_key, 9),
+    "C#:min", circshift(minor_key, 1),
+    "E:maj", circshift(major_key, 4),
+    "G#:min", circshift(minor_key, 8),
+    "B:maj", circshift(major_key, 11),
+    "D#:min", circshift(minor_key, 3)
+  )
+```
+
+About
+==================
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+
+```{r}
+
+```
+
+***
+
+Over the next few pages will be an analysis that will provide insights into a corpus of songs from the rock genre, throughout the 80s, 90s, and 00s. The rock genre is my favourite across the decades and looking into what **ties them together** and **sets them apart** is interesting to me.
+
+The corpus consists of three own-made playlists, one for each decde, consisting of 30 songs each. In order to ensure the playlist was represented of the rick genre of the equivalent decade, I ensured to fill it with songs from my knowledge, from Spotify made playlists, and from other users' playlists on Spotify. 
+
+I expect the themes between decades to be quite similar, as no matter the year, the rock genre stands for certain messages that won’t change, such as themes of rebellion, social commentary, and personal struggles across all three decades. However, I expect the musical style to differ between the decades, making the 90s have more energy than the 80s, and the 2000s even more than the 90s. Throughout this storyboard, I plan to prove this using a computational musicological analysis with data from the Spotify API.
+ 
+
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### The Playlists
+
+```{r}
+
+```
+
+***
+
+**80s Rock**
+
+<iframe style="border-radius:12px" src="https://open.spotify.com/embed/playlist/7wFHQHyooUBgtrPqW3iGzk?utm_source=generator" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+
+**90s Rock**
+
+<iframe style="border-radius:12px" src="https://open.spotify.com/embed/playlist/1CkbyHSuvnAXdosoBW6Vm0?utm_source=generator" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+
+**00s Rock**
+
+<iframe style="border-radius:12px" src="https://open.spotify.com/embed/playlist/7IeVftpjOptptIDThtx3rd?utm_source=generator" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+
+
+
+00s kids likely to lose sense of hearing soon
+==================
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+
+```{r,echo=FALSE}
+corpus |>                   
+  mutate(
+    track.popularity = ifelse(track.popularity < 75, "Little", "Very")
+  ) |>
+  ggplot(                   
+    aes(
+      x = valence,
+      y = danceability,
+      size = loudness,
+      colour = track.popularity,
+      label = track.name
+    )
+  ) +
+  geom_point() +              
+  geom_rug(linewidth = 0.1) +  
+  geom_text(                 
+    aes(
+      x = valence,
+      y = danceability,
+      label = label
+    ),
+    data = 
+      tibble(
+        label = c("Shadow of the Day", "Girl, You'll be a Woman Soon", "I Love Rock 'N Rol"),
+        category = c("00s", "90s", "80s"),
+        valence = c(0.0641, 0.5570, 0.9010),
+        danceability = c(0.534, 0.514, 0.535)
+      ),
+    colour = "black",        
+    size = 3,                 
+    hjust = "left",           
+    vjust = "center",         
+    nudge_x = 0.02            
+  ) +
+  facet_wrap(~ category) +    
+  scale_x_continuous(         
+    limits = c(0, 1),
+    breaks = c(0, 0.50, 1),   
+    minor_breaks = NULL       
+  ) +
+  scale_y_continuous(         
+    limits = c(0, 1),
+    breaks = c(0, 0.50, 1),
+    minor_breaks = NULL
+  ) +
+  scale_colour_brewer(        
+    type = "qual",            
+    palette = "Paired"        
+  ) +
+  scale_size_continuous(      
+    trans = "exp",            
+    guide = "none"            
+  ) +
+  theme_light() +             
+  labs(                       
+    x = "Valence",
+    y = "Danceability",
+    colour = "Popularity"
+  )
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+
+```{r}
+
+```
+
+***
+
+The scatter plot is divided into three sections, one for each decade, with Danceability  on the y-axis and Valence on the x-axis. I was interested to see if the valence had an influence on danceability, however it can’t be seen from a quick visualisation and would need to be looked into further.. Other variables present in this scatter plot are Track Popularity, measured by color, where a track is considered “Very” popular if it was superior to 75, and “Little” popular if it was inferior to 75. I also measured loudness, which I found interesting to look into for rock music, and that variable is measured by size. From the plot, I can see that 00s rock is louder than both other decades, which was interesting to find out, but not surprising, as the loudest sing in the whole corpus is from this playlist: "American Idiot" by Greenday. 
+
+<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/6nTiIhLmQ3FWhvrGafw2zj?utm_source=generator" width="100%" height="152" frameborder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+
+The Chroma Explosion of High-Energy Hits
+==================
+
+```{r,echo=FALSE}
+paradisecity <-
+  get_tidy_audio_analysis("6eN1f9KNmiWEhpE2RhQqB5?si=9c2ff2efdca54285") |>
+  select(segments) |>
+  unnest(segments) |>
+  select(start, duration, pitches)
+
+cherrypie <-
+  get_tidy_audio_analysis("18ESXa5mEm1V4Pkt5GSXWx?si=bdee2e3c42884260") |>
+  select(segments) |>
+  unnest(segments) |>
+  select(start, duration, pitches)
+
+americanidiot <-
+  get_tidy_audio_analysis("6nTiIhLmQ3FWhvrGafw2zj?si=cbc9015d71ef4a3e") |>
+  select(segments) |>
+  unnest(segments) |>
+  select(start, duration, pitches)
+
+
+```
+
+Column {.tabset .tabset-fade}
+-----------------------------------------------------------------------
+
+### 80s
+
+```{r,echo=FALSE}
+paradisecity |>
+  mutate(pitches = map(pitches, compmus_normalise, "euclidean")) |>
+  compmus_gather_chroma() |> 
+  ggplot(
+    aes(
+      x = start + duration / 2,
+      width = duration,
+      y = pitch_class,
+      fill = value
+    )
+  ) +
+  geom_tile() +
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude", title = "Paradise City (Guns N' Roses") +
+  theme_minimal() +
+  scale_fill_viridis_c()
+```
+
+
+### 90s 
+
+```{r,echo=FALSE}
+cherrypie |>
+  mutate(pitches = map(pitches, compmus_normalise, "euclidean")) |>
+  compmus_gather_chroma() |> 
+  ggplot(
+    aes(
+      x = start + duration / 2,
+      width = duration,
+      y = pitch_class,
+      fill = value
+    )
+  ) +
+  geom_tile() +
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude", title = "Cherry Pie (Warrant)") +
+  theme_minimal() +
+  scale_fill_viridis_c()
+```
+
+
+### 00s
+
+```{r,echo=FALSE}
+americanidiot |>
+  mutate(pitches = map(pitches, compmus_normalise, "euclidean")) |>
+  compmus_gather_chroma() |> 
+  ggplot(
+    aes(
+      x = start + duration / 2,
+      width = duration,
+      y = pitch_class,
+      fill = value
+    )
+  ) +
+  geom_tile() +
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude", title = "American Idiot (Greenday)") +
+  theme_minimal() +
+  scale_fill_viridis_c()
+```
+
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+***
+
+Energy typically refers to the intensity and activity of a song. I used energy features for chromagram analysis to quantify the  strength of individual pitch classes in the audio track, providing insights into the harmonic content and overall tonality of the music.
+
+The three chromagrams to the left belong to the three most energetic song of each decade from my corpus. 
+
+When you listen to these songs, you can see that they are identified as loud, fast and noisy, which makes you understand why they're considered high energy songs.
+
+
+**Paradise City**
+
+The song starts at a F# and stays in this key throughout the song. At 41 seconds is when the introduction segmenet ends and the song begins, which can see on the chromagram as when B lights up.
+
+<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/6eN1f9KNmiWEhpE2RhQqB5?utm_source=generator" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+
+
+**Cherry Pie**
+
+Cherry Pie is a song with rapid changes in the harmony, making the chromagram difficult to analyze. Nonetheless, at 135 seconds, the chorus of the song ends to start the guitar solo in A, as can be seen on the chromagram.
+
+<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/18ESXa5mEm1V4Pkt5GSXWx?utm_source=generator" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+
+
+**American Idiot**
+
+American Pie stays consistent in C and C# throughout the song. At 51 seconds, as well as 98 and 129, is when the music stops for a drum segment, that's when we see a shine in G#. Also, th moments at which in lights up in F# is when the signature guitar beat that plays in American Idiot. 
+
+<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/6nTiIhLmQ3FWhvrGafw2zj?utm_source=generator" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+
+Take Me Out to the Key of Brilliance
+==================
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+
+
+```{r,echo=FALSE}
+takemeout <-
+  get_tidy_audio_analysis("20I8RduZC2PWMWTDCZuuAN?si=1d84a62a151147bf") |>
+  compmus_align(sections, segments) |>
+  select(sections) |>
+  unnest(sections) |>
+  mutate(
+    pitches =
+      map(segments,
+          compmus_summarise, pitches,
+          method = "mean", norm = "manhattan"
+      )
+  )
+
+```
+
+```{r,echo=FALSE}
+takemeout |> 
+  compmus_match_pitch_template(
+    key_templates,         
+    method = "euclidean",  
+    norm = "manhattan"     
+  ) |>
+  ggplot(
+    aes(x = start + duration / 2, width = duration, y = name, fill = d)
+  ) +
+  geom_tile() +
+  scale_fill_viridis_c(guide = "none") +
+  theme_minimal() +
+  labs(x = "Time (s)", y = "")
+
+```
+
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+"Take Me Out" by Franz Ferdinand has a rhythm and sound that comes from a brilliant blend of instruments that can be identified anywhere at anytime.The song's catchy guitar riff, energetic rhythm, and dynamic shifts in key make it an interesting subject for a keygram analysis.  This can be seen from 55 to 65 seconds, when the first interlude appears on the song to make way for the instrumentalist segment. 
+
+<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/20I8RduZC2PWMWTDCZuuAN?utm_source=generator" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+
+
+Under the Hood of the World's Most Famous Chords
+==================
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+```{r,echo=FALSE}
+
+moneyfornothing <-
+  get_tidy_audio_analysis("6HMFtoMvv6n6Q2eOyPFyne?si=ecc0021d2ba941ff") |>
+  compmus_align(sections, segments) |>
+  select(sections) |>
+  unnest(sections) |>
+  mutate(
+    pitches =
+      map(segments,
+          compmus_summarise, pitches,
+          method = "mean", norm = "manhattan"
+      )
+  )
+
+```
+
+```{r,echo=FALSE}
+moneyfornothing |> 
+  compmus_match_pitch_template(
+    chord_templates,         
+    method = "euclidean",  
+    norm = "manhattan"     
+  ) |>
+  ggplot(
+    aes(x = start + duration / 2, width = duration, y = name, fill = d)
+  ) +
+  geom_tile() +
+  scale_fill_viridis_c(guide = "none") +
+  theme_minimal() +
+  labs(x = "Time (s)", y = "")
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+***
+
+My favorite band is Dire Straits because most of their songs are known to be the hardest to every play on the guitar. This is due to the complex chords and guitar arrangements by their lead guitarist Mark Knopfler. For this reason, we're looking into the chordogram of "Money For Nothing" by Dire Straits.
+
+The intro to this song is onger than most, lasting for over a minute, with abguest appearance from Sting saying "I want my MTV". Once the song starts, we mostly hear drums, then when the guitar joins in at 86 seconds, we see a line down the chordogram indicating a change. The vocals and lyrics start at about 123 seconds, which is presented by another line down the chordogram. 
+
+<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/4bO6DljpuAeQh6HS20i0I5?utm_source=generator" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+
+
+
+
+Visualizing the Beat: Exploring Typical vs. Atypical 90s rock
+==================
+
+```{r,echo=FALSE}
+
+wonderwall <-
+  get_tidy_audio_analysis("7ygpwy2qP3NbrxVkHvUhXY?si=3e98096edbf84a7a") |> 
+  compmus_align(beats, segments) |>                     
+  select(beats) |>                                      
+  unnest(beats) |>                                      
+  mutate(
+    pitches =
+      map(segments,
+          compmus_summarise, pitches,
+          method = "rms", norm = "euclidean"              
+      )
+  ) |>
+  mutate(
+    timbre =
+      map(segments,
+          compmus_summarise, timbre,
+          method = "rms", norm = "euclidean"             
+      )
+  )
+```
+
+```{r,echo=FALSE}
+teenspirit <-
+  get_tidy_audio_analysis("4CeeEOM32jQcH3eN9Q2dGj?si=d7d6bf42c9504ab0") |> 
+  compmus_align(beats, segments) |>                     
+  select(beats) |>                                      
+  unnest(beats) |>                                      
+  mutate(
+    pitches =
+      map(segments,
+          compmus_summarise, pitches,
+          method = "rms", norm = "euclidean"              
+      )
+  ) |>
+  mutate(
+    timbre =
+      map(segments,
+          compmus_summarise, timbre,
+          method = "rms", norm = "euclidean"             
+      )
+  )
+```
+
+Column {.tabset .tabset-fade}
+-----------------------------------------------------------------------
+
+
+### "Smells Like Teen Spirit" by Nirvana Timbre
+
+```{r,echo=FALSE}
+teenspirit |>
+  compmus_self_similarity(timbre, "euclidean") |> 
+  ggplot(
+    aes(
+      x = xstart + xduration / 2,
+      width = xduration,
+      y = ystart + yduration / 2,
+      height = yduration,
+      fill = d
+    )
+  ) +
+  geom_tile() +
+  coord_fixed() +
+  scale_fill_viridis_c(guide = "none") +
+  theme_classic() +
+  labs(x = "", title = "Timbre", y = "")
+
+```
+
+### "Smells Like Teen Spirit" by Nirvana Chroma
+
+```{r,echo=FALSE}
+teenspirit |>
+  compmus_self_similarity(pitches, "euclidean") |> 
+  ggplot(
+    aes(
+      x = xstart + xduration / 2,
+      width = xduration,
+      y = ystart + yduration / 2,
+      height = yduration,
+      fill = d
+    )
+  ) +
+  geom_tile() +
+  coord_fixed() +
+  scale_fill_viridis_c(guide = "none") +
+  theme_classic() +
+  labs(x = "", title = "Chroma", y = "")
+
+```
+
+
+### "Wonderwall" by Oasis Timbre
+
+```{r,echo=FALSE}
+wonderwall |>
+  compmus_self_similarity(timbre, "euclidean") |> 
+  ggplot(
+    aes(
+      x = xstart + xduration / 2,
+      width = xduration,
+      y = ystart + yduration / 2,
+      height = yduration,
+      fill = d
+    )
+  ) +
+  geom_tile() +
+  coord_fixed() +
+  scale_fill_viridis_c(guide = "none") +
+  theme_classic() +
+  labs(x = "", title = "Timbre", y = "")
+
+```
+
+### "Wonderwall" by Oasis Chroma
+
+```{r,echo=FALSE}
+wonderwall |>
+  compmus_self_similarity(pitches, "euclidean") |> 
+  ggplot(
+    aes(
+      x = xstart + xduration / 2,
+      width = xduration,
+      y = ystart + yduration / 2,
+      height = yduration,
+      fill = d
+    )
+  ) +
+  geom_tile() +
+  coord_fixed() +
+  scale_fill_viridis_c(guide = "none") +
+  theme_classic() +
+  labs(x = "", title = "Chroma", y = "")
+
+```
+
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+***
+
+I chose these two tracks to analyze through sekf similarity matrices because while they both belong to the same decade, the 90s, one is considered an archetype of the genre from this time, "Smells Like Teen Spirit" by Nirvana, the other is considered an outlier, "Wonderwall" by Oasis.
+
+**Smells Like Teen Spirit**
+
+This song is considered an archetype of 90s rock for many reasons. The guitar riffs, heavy drums and angsty singing are characteristic of the genre from this time, in addition to the lyrics about teenage rebellion.
+
+You can see the darkest part of the grid is between almost the 160 second mark and the 210 second mark. This is because there is an instrumental section where the instruments clearly stand out and you can distinguish the different instruments playing in this segment. On the other hand, when you compare this segment to the one from roughly 25 seconds to 60 seconds, you can see that it is yellow and quite light colored on the matrix, meaning there is little similarity between both segments. If you listen to this passage in the song, it was quite low energy compared the instrument solo later on, which explains the light colors on the matrix.
+
+
+When looking at the same song’s self similarity matrix but based on chroma features this time, you see that more or less, the same passages light up, however the colored “squares” are vary more in this matrix and that’s because instead of just comparing the “feel” of the segment, it compares he specific pitch, also known as chroma.
+
+<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/4CeeEOM32jQcH3eN9Q2dGj?utm_source=generator" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+
+**Wonderwall**
+
+While this song is a staple of the rock henre, it can be considered an oulier of 90s rock because the genre at that time was characterised by aleternative and grunge mostly leabing towards a raw and unpolished sounds, this song comes out with influences from pop due to its sing-along lyrics and nice harmony.
+
+Here, you can see the self similarity matrix based on timbre for the song mentioned. You can see an obvious point of comparison just after the 100 second mark. When listening to the song, this is a point right after the chorus. I believe this stands out when looking at timbre features is because of the isolation of instruments in this segments. You can clearly separate the drums, guitar, and vocals here.
+
+Similarly, when looking at the chroma features through a self similarity matrix, this point of comparison also stands out due to the similarities of the pitches.
+
+<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/7ygpwy2qP3NbrxVkHvUhXY?utm_source=generator" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+
+**Conclusion**
+
+When comparing the self similarioty matrices base don timbre and chroma of a typical vs atypical song from 90s rock, one thing stands out the most. When a song has high similarity, its self similarity matrix will have a checkerboard pattern, as can be seen on the "Smells Like Teen Spirit" matrices, however, cannot be seen on the "Wonderwall" matrices. This can be a reason why one song is considered typical of the genre in the 90s and another atypical. 
+
+
+
+Exploring the #1 Beats
+==================
+
+```{r,echo=FALSE}
+backinblack <- get_tidy_audio_analysis("08mG3Y1vljYA6bvDt4Wqkj?si=3cd7395d4db7470f")
+americanidiot <- get_tidy_audio_analysis("6nTiIhLmQ3FWhvrGafw2zj?si=fe3cb4c509684754")
+anotheronebitesthedust <- get_tidy_audio_analysis("5vdp5UmvTsnMEMESIF2Ym7?si=ea9b733c9eaa4e11")
+iloverocknroll <- get_tidy_audio_analysis("2Cdvbe2G4hZsnhNMKyGrie?si=b0459310742f4609")
+galwaygirl <- get_tidy_audio_analysis("6YSwWeCnDXEbQ7M2SA0GF8?si=00e7908516cc47be")
+feelgoodinc <- get_tidy_audio_analysis("0d28khcov6AiegSCpG5TuT?si=e04d61dbcc284d9b")
+needyoutonight <- get_tidy_audio_analysis("3h04eZTnmFLRMjZajbrp2R?si=94e2ab32a16343a2")
+myimmortal <- get_tidy_audio_analysis("4UzVcXufOhGUwF56HT7b8M?si=b0b631ebc72a40d1")
+```
+
+Column {.tabset .tabset-fade}
+-----------------------------------------------------------------------
+
+### Back in Black Beats
+
+```{r,echo=FALSE}
+
+backinblack |>
+  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+```
+
+### Deciphering Decibels
+
+```{r,echo=FALSE}
+americanidiot |>
+  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+```
+
+### Rhythm Royalty
+
+```{r,echo=FALSE}
+anotheronebitesthedust |>
+  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+```
+
+### Rocking the Joy
+
+```{r,echo=FALSE}
+iloverocknroll |>
+  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+
+```
+
+### Tempo in Concert
+
+```{r,echo=FALSE}
+galwaygirl |>
+  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+
+```
+
+### Spoken Grooves
+
+```{r,echo=FALSE}
+feelgoodinc |>
+  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+
+```
+
+### Need the most Instrumental Tempo Tonight
+
+```{r,echo=FALSE}
+needyoutonight |>
+  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+
+```
+
+### Tempo Unplugged 
 
 ```{r,echo=FALSE, fig.width=10, fig.height=7}
+myimmortal |>
+  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+
+***
+
+This page will show you the tempogram analysis if all the number 1 songs in this corpus. This includes but is not limited to number 1 tempo, number 1 energy, number 1 speechiness, and much more!
+
+**Back in Black**
+
+According to Spotify’s API, the song with the highest tempo variable in my corpus is “Back in Black” by ACDC.You can see on the tempogram that it’s pretty steady at about 90 BPM, but the yellow spreads accross at about 210 seconds. At this time, you can hear the guitar come in for a segment as the lead instrument, changing the tempo for a little bit, as can be visualised on the tempogram.
+
+<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/08mG3Y1vljYA6bvDt4Wqkj?utm_source=generator" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+
+**American Idiot**
+
+“American Idiot” by Greenday is not only the most energetic in my corpus, but it’s also the loudest. Due to it being an outlier in not one, but two important variables, I expected this to manifest in some way in the tempogram. However, aside from a couple of minor bumps, the tempo stays stable at around 95 BPM throughout the song.
+
+<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/6nTiIhLmQ3FWhvrGafw2zj?utm_source=generator" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+
+**Another One Bites The Dust**
+
+Queen truly is Rhythm Royalty by making the most danceable song in my corpus, “Another One Bites The Dust”. With an average of about 110 BPM, we see some movement away from the average at about 80 seconds, lasting 20-25 seconds. At this point in the song, it’s the second time the chorus comes around and the peak of the song, which is when the iconic beat of “Another One Bites The Dust” come up and switches up the tempo. The chorus (and this beat) come around two more times in the song, the first at around 40 seconds, which is when we see the first slight movement of yellow in the tempogram, and the third at about 150 seconds, we see bigger movement, but not as much as the peak of the song.
+
+<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/5vdp5UmvTsnMEMESIF2Ym7?utm_source=generator" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+
+**I Love Rock 'N Roll**
+
+Joan Jett & The Blackhearts must have been rocking with joy while making “I Love Rock ’N Roll” because that song has the highest valence found in my corpus. The song doesn’t have a stable tempo, but it mostly ranges between 80-85 BPM to 100 BPM. However, there are some interesting outlier moments that are interesting to look into. The first stands at around 14 seconds, where we see a spread of the yellow, rather than the normal range. When listening to the song, 14 seconds is where we move from the introduction beat to the guitar riff that really starts the song. Another outlier moment we can see on the tempogram is at 100 seconds, which in the song corresponds to the start of a segment of the song with a focal point on the guitar. The last outlier moment worth noting is at 125 seconds, which, in the song, indicates the start of the a cappella section in the “I Love Rock ’N Roll”.
+
+<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/2Cdvbe2G4hZsnhNMKyGrie?utm_source=generator" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+
+**Galway Girl**
+
+Another variable the Spotify API measures is the “liveness” of the song, where they measure the presence of an audience. The one with the highest liveness in my corpus is “Galway Girl” by Mundy, which makes sense since it’s the only live recording in the corpus. As you can see, the tempogram gives us a few moments to note that move away from the general 95 BPM. At 100 seconds, you can see on the tempogram the yellow line suddenly drop, that’s because at that time, the beat slows down for the singer to speak to his audience at the concert, and for them to sing. The yellow line then goes back up to it’s original sport at 130 seconds, when the beat picks up and the singer continues singing. A similar phenomenon happens where after the beat drops to a quiet moment in the song which cna be seen by the second drop of the yellow line, it picks up to a very high energy high BPM at 190 seconds, which is visualised by the yellow being spread all over the tempogram.
+
+<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/6YSwWeCnDXEbQ7M2SA0GF8?utm_source=generator" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+
+**Feel Good Inc**
+
+A song Spotify deemed had the highest speechiness in my corpus is “Feel Good Inc” by Gorillaz. From the tempogram, we can see the tempo is pretty stable at 140 BPM. We see some movement with the yellow spreading out at around 135 seconds, which is manifested due to a new section of the song where the beat slows down and the instruments sound softer, which leads up to a a slow build up in the song.
+
+<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/0d28khcov6AiegSCpG5TuT?utm_source=generator" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+
+**Need You Tonight**
+
+Following up on the song with the highest speechiness, “Need You Tonight” by INXS had the highest instrumentalness, according to the Spotify API. My expectations of the tempogram included some movement of the tempo due to the different “feel” of different segments of the song. In reality, the tempogram shows a steady tempo throughout the whole song at around 110 BPM. After seeing the tempogram and listening ot the song again, I see that this makes sense because although the “feel” of some sections is different, the background instruments and beat stays the same throughout the song.
+
+<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/3h04eZTnmFLRMjZajbrp2R?utm_source=generator" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+
+**My Immortal**
+
+Last but certainly not least, this song was the corpus’ most acoustic song, “My Immortal” by Evanescence. As you can see on the tempogram, the yellow is spread all over the graph, making it harder than the rest to analyse the tempo. Nonetheless, we can see that the average tempo of the song rests between 140 and 160 BPM, varying in this bracket. We can see a significant drop in empo at around 80 seconds, which is when the singer takes a breath and the song quiets down for a few seconds.
+
+<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/4UzVcXufOhGUwF56HT7b8M?utm_source=generator" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+
+
+Clustered Insights through the Decades
+==================
+
+Column {.tabset .tabset-fade}
+-----------------------------------------------------------------------
+
+### 80s
+
+```{r,echo=FALSE}
 eightys <-
   get_playlist_audio_features("", "7wFHQHyooUBgtrPqW3iGzk?si=88ef7f81898f4442") |>
   add_audio_analysis() |>
@@ -68,7 +867,7 @@ eightys <-
   unnest(cols = c(pitches, timbre))
 ```
 
-```{r,echo=FALSE, fig.width=10, fig.height=7}
+```{r,echo=FALSE}
 eightys_juice <-
   recipe(
     track.name ~
@@ -99,15 +898,10 @@ heatmaply(
 )
 ```
 
-***
 
-This is a dendrogram accompanied by a heat map to better illustrate the hierarchical clustering of the 80s playlist from my corpus. It is no surprise that loudness and liveness are clustered together, with energy coming in further, but I was surprised to see that danceability and instrumentalness were clustered together, with valence not far away.
+### 90s
 
-
-
-### 90s clusters
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
+```{r,echo=FALSE}
 ninetys <-
   get_playlist_audio_features("", "1CkbyHSuvnAXdosoBW6Vm0?si=99e5c95982204339") |>
   add_audio_analysis() |>
@@ -130,7 +924,7 @@ ninetys <-
   unnest(cols = c(pitches, timbre))
 ```
 
-```{r,echo=FALSE, fig.width=10, fig.height=7}
+```{r,echo=FALSE}
 ninetys_juice <-
   recipe(
     track.name ~
@@ -161,14 +955,9 @@ heatmaply(
 )
 
 ```
-***
- 
-This is a dendrogram accompanied by a heat map to better illustrate the hierarchical clustering of the 90s playlist from my corpus. It is no surprise that loudness and energy are closely clustered together, but I was surprised to see that tempo and speechiness were clustered together, being not too far away from the first two we mentioned. 
-
-The two features furthest apart are instrumentalness and tempo, which makes sense because the song "November Rain" is the most instrumentak and one of the slowest in tempo.
 
 
-### 00s clusters
+### 00s
 
 ```{r,echo=FALSE, fig.width=10, fig.height=7}
 twothousands <-
@@ -224,1169 +1013,42 @@ heatmaply(
 )
 
 ```
-***
 
-
-This is a dendrogram accompanied by a heat map to better illustrate the hierarchical clustering of the 00s playlist from my corpus. It is no surprise that loudness and energy are clustered together, with tempo coming in further.
-
-The two features furthest apart are energy and acousticness, which can be illustrated by the song "My Immortal" which is the highest in acousticness and lowest in energy.
-
-
-Exploring the #1 Beats {.storyboard}
-=========================================
-
-### Introduction
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-```
-
-The following board will show you the tempogram analysis if all the number 1 songs in this corpus. This includes but is not limited to number 1 tempo, number 1 energy, number 1 speechiness, and much more!
-
-
-### Back in Black Beats
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-library(tidyverse)
-library(spotifyr)
-library(compmus)
-library(ggplot2)
-library(dplyr)
-library(conflicted)
-library(forcats)
-library(lubridate)
-library(purrr)
-library(readr)
-library(stringr)
-library(tibble)
-library(tidyr)
-library(hrbrthemes)
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-
-backinblack <- get_tidy_audio_analysis("08mG3Y1vljYA6bvDt4Wqkj?si=3cd7395d4db7470f")
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-
-backinblack |>
-  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
-  ggplot(aes(x = time, y = bpm, fill = power)) +
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +
-  labs(x = "Time (s)", y = "Tempo (BPM)") +
-  theme_classic()
-```
+Column {data-width=350}
+-----------------------------------------------------------------------
 
 ***
 
-According to Spotify's API, the song with the highest tempo variable in my corpus is "Back in Black" by ACDC.You can see on the tempogram that it's pretty steady at about 90 BPM, but the yellow spreads accross at about 210 seconds. At this time, you can hear the guitar come in for a segment as the lead instrument, changing the tempo for a little bit, as can be visualised on the tempogram.
+Clusters help identify patterns, similarities, and differences, and they are the key visualisations for my storyboard. The heatmaps come alongside dendrograms, one that clusters the playlist per feature, another per song, and I'll be looking into the feature clusters.
 
+**80s**
 
+It is interesting that loudness and liveness are clustered together, with energy coming in further, but I was surprised to see that danceability and instrumentalness were clustered together, with valence not far away.
 
-### Deciphering Decibels
+**90s**
 
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-library(tidyverse)
-library(spotifyr)
-library(compmus)
-library(ggplot2)
-library(dplyr)
-library(conflicted)
-library(forcats)
-library(lubridate)
-library(purrr)
-library(readr)
-library(stringr)
-library(tibble)
-library(tidyr)
-library(hrbrthemes)
-```
+It is no surprise that loudness and energy are closely clustered together, especially in 90s rock, but I was surprised to see that tempo and speechiness were clustered together, being not too far away from the first two mentioned.
 
-```{r,echo=FALSE, fig.width=10, fig.height=7}
+The two features furthest apart are instrumentalness and tempo, which makes sense because the song “November Rain” by Guns N' Roses is the most instrumental and one of the slowest in tempo. This song is also the further outlier of this playlist.
 
-americanidiot <- get_tidy_audio_analysis("6nTiIhLmQ3FWhvrGafw2zj?si=fe3cb4c509684754")
-```
+<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/3YRCqOhFifThpSRFJ1VWFM?utm_source=generator" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
 
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-americanidiot |>
-  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
-  ggplot(aes(x = time, y = bpm, fill = power)) +
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +
-  labs(x = "Time (s)", y = "Tempo (BPM)") +
-  theme_classic()
-```
+**00s**
 
-***
+It is no surprise that loudness and energy are clustered together again, with tempo coming in further.
 
-"American Idiot" by Greenday is not only the most energetic in my corpus, but it's also the loudest. Due to it being an outlier in not one, but two important variables, I expected this to manifest in some way in the tempogram. However, aside from a couple of minor bumps, the tempo stays stable at around 95 BPM throughout the song.
+The two features furthest apart are energy and acousticness, which can be illustrated by the song “My Immortal” by Evanescance which is the highest in acousticness and lowest in energy. It is also the biggest outlier in the playlist.
 
-### Rhythm Royalty
+<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/4UzVcXufOhGUwF56HT7b8M?utm_source=generator" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
 
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-library(tidyverse)
-library(spotifyr)
-library(compmus)
-library(ggplot2)
-library(dplyr)
-library(conflicted)
-library(forcats)
-library(lubridate)
-library(purrr)
-library(readr)
-library(stringr)
-library(tibble)
-library(tidyr)
-library(hrbrthemes)
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-
-anotheronebitesthedust <- get_tidy_audio_analysis("5vdp5UmvTsnMEMESIF2Ym7?si=ea9b733c9eaa4e11")
-
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-anotheronebitesthedust |>
-  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
-  ggplot(aes(x = time, y = bpm, fill = power)) +
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +
-  labs(x = "Time (s)", y = "Tempo (BPM)") +
-  theme_classic()
-```
-
-***
-
-Queen truly is Rhythm Royalty by making the most danceable song in my corpus, "Another One Bites The Dust". With an average of about 110 BPM, we see some movement away from the average at about 80 seconds, lasting 20-25 seconds. At this point in the song, it's the second time the chorus comes around and the peak of the song, which is when the iconic beat of "Another One Bites The Dust" come up and switches up the tempo. The chorus (and this beat) come around two more times in the song, the first at around 40 seconds, which is when we see the first slight movement of yellow in the tempogram, and the third at about 150 seconds, we see bigger movement, but not as much as the peak of the song.
-
-### Rocking the Joy
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-library(tidyverse)
-library(spotifyr)
-library(compmus)
-library(ggplot2)
-library(dplyr)
-library(conflicted)
-library(forcats)
-library(lubridate)
-library(purrr)
-library(readr)
-library(stringr)
-library(tibble)
-library(tidyr)
-library(hrbrthemes)
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-
-iloverocknroll <- get_tidy_audio_analysis("2Cdvbe2G4hZsnhNMKyGrie?si=b0459310742f4609")
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-iloverocknroll |>
-  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
-  ggplot(aes(x = time, y = bpm, fill = power)) +
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +
-  labs(x = "Time (s)", y = "Tempo (BPM)") +
-  theme_classic()
-
-```
-
-***
-
-Joan Jett & The Blackhearts must have been rocking with joy while making "I Love Rock 'N Roll" because that song has the highest valence found in my corpus. The song doesn’t have a stable tempo, but it mostly ranges between 80-85 BPM to 100 BPM. However, there are some interesting outlier moments that are interesting to look into. The first stands at around 14 seconds, where we see a spread of the yellow, rather than the normal range. When listening to the song, 14 seconds is where we move from the introduction beat to the guitar riff that really starts the song. Another outlier moment we can see on the tempogram is at 100 seconds, which in the song corresponds to the start of a segment of the song with a focal point on the guitar. The last outlier moment worth noting is at 125 seconds, which, in the song, indicates the start of the a cappella section in the "I Love Rock 'N Roll".
-
-### Tempo in concert
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-library(tidyverse)
-library(spotifyr)
-library(compmus)
-library(ggplot2)
-library(dplyr)
-library(conflicted)
-library(forcats)
-library(lubridate)
-library(purrr)
-library(readr)
-library(stringr)
-library(tibble)
-library(tidyr)
-library(hrbrthemes)
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-
-galwaygirl <- get_tidy_audio_analysis("6YSwWeCnDXEbQ7M2SA0GF8?si=00e7908516cc47be")
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-galwaygirl |>
-  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
-  ggplot(aes(x = time, y = bpm, fill = power)) +
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +
-  labs(x = "Time (s)", y = "Tempo (BPM)") +
-  theme_classic()
-
-```
-
-***
-
-Another variable the Spotify API measures is the "liveness" of the song, where they measure the presence of an audience. The one with the highest liveness in my corpus is "Galway Girl" by Mundy, which makes sense since it's the only live recording in the corpus. As you can see, the tempogram gives us a few moments to note that move away from the general 95 BPM. At 100 seconds, you can see on the tempogram the yellow line suddenly drop, that's because at that time, the beat slows down for the singer to speak to his audience at the concert, and for them to sing. The yellow line then goes back up to it's original sport at 130 seconds, when the beat picks up and the singer continues singing. A similar phenomenon happens where after the beat drops to a quiet moment in the song which cna be seen by the second drop of the yellow line, it picks up to a very high energy high BPM at 190 seconds, which is visualised by the yellow being spread all over the tempogram.
-
-### Spoken Grooves
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-library(tidyverse)
-library(spotifyr)
-library(compmus)
-library(ggplot2)
-library(dplyr)
-library(conflicted)
-library(forcats)
-library(lubridate)
-library(purrr)
-library(readr)
-library(stringr)
-library(tibble)
-library(tidyr)
-library(hrbrthemes)
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-
-feelgoodinc <- get_tidy_audio_analysis("0d28khcov6AiegSCpG5TuT?si=e04d61dbcc284d9b")
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-feelgoodinc |>
-  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
-  ggplot(aes(x = time, y = bpm, fill = power)) +
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +
-  labs(x = "Time (s)", y = "Tempo (BPM)") +
-  theme_classic()
-
-
-```
-
-***
-
-A song Spotify deemed had the highest speechiness in my corpus is "Feel Good Inc" by Gorillaz. From the tempogram, we can see the tempo is pretty stable at 140 BPM. We see some movement with the yellow spreading out at around 135 seconds, which is manifested due to a new section of the song where the beat slows down and the instruments sound softer, which leads up to a a slow build up in the song.
-
-### Need the Most Instrumental Tempo tonight
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-library(tidyverse)
-library(spotifyr)
-library(compmus)
-library(ggplot2)
-library(dplyr)
-library(conflicted)
-library(forcats)
-library(lubridate)
-library(purrr)
-library(readr)
-library(stringr)
-library(tibble)
-library(tidyr)
-library(hrbrthemes)
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-
-needyoutonight <- get_tidy_audio_analysis("3h04eZTnmFLRMjZajbrp2R?si=94e2ab32a16343a2")
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-needyoutonight |>
-  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
-  ggplot(aes(x = time, y = bpm, fill = power)) +
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +
-  labs(x = "Time (s)", y = "Tempo (BPM)") +
-  theme_classic()
-
-```
-
-***
-
-Following up on the song with the highest speechiness, "Need You Tonight" by INXS had the highest instrumentalness, according to the Spotify API. My expectations of the tempogram included some movement of the tempo due to the different "feel" of different segments of the song. In reality, the tempogram shows a steady tempo throughout the whole song at around 110 BPM. After seeing the tempogram and listening ot the song again, I see that this makes sense because although the "feel" of some sections is different, the background instruments and beat stays the same throughout the song.
-
-### Tempo Unplugged
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-library(tidyverse)
-library(spotifyr)
-library(compmus)
-library(ggplot2)
-library(dplyr)
-library(conflicted)
-library(forcats)
-library(lubridate)
-library(purrr)
-library(readr)
-library(stringr)
-library(tibble)
-library(tidyr)
-library(hrbrthemes)
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-
-myimmortal <- get_tidy_audio_analysis("4UzVcXufOhGUwF56HT7b8M?si=b0b631ebc72a40d1")
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-myimmortal |>
-  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
-  ggplot(aes(x = time, y = bpm, fill = power)) +
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +
-  labs(x = "Time (s)", y = "Tempo (BPM)") +
-  theme_classic()
-```
-
-***
-Last but certainly not least, this song was the corpus' most acoustic song, "My Immortal" by Evanescence. As you can see on the tempogram, the yellow is spread all over the graph, making it harder than the rest to analyse the tempo. Nonetheless, we can see that the average tempo of the song rests between 140 and 160 BPM, varying in this bracket. We can see a significant drop in empo at around 80 seconds, which is when the singer takes a breath and the song quiets down for a few seconds.
-
-Under the hood of some of the world's most famous chords {.storyboard}
-=========================================
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-library(tidyverse)
-library(spotifyr)
-library(compmus)
-library(ggplot2)
-library(dplyr)
-library(conflicted)
-library(forcats)
-library(lubridate)
-library(purrr)
-library(readr)
-library(stringr)
-library(tibble)
-library(tidyr)
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-circshift <- function(v, n) {
-  if (n == 0) v else c(tail(v, n), head(v, -n))
-}
-
-#      C     C#    D     Eb    E     F     F#    G     Ab    A     Bb    B
-major_chord <-
-  c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    0,    0)
-minor_chord <-
-  c(   1,    0,    0,    1,    0,    0,    0,    1,    0,    0,    0,    0)
-seventh_chord <-
-  c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    1,    0)
-
-major_key <-
-  c(6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88)
-minor_key <-
-  c(6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17)
-
-chord_templates <-
-  tribble(
-    ~name, ~template,
-    "Gb:7", circshift(seventh_chord, 6),
-    "Gb:maj", circshift(major_chord, 6),
-    "Bb:min", circshift(minor_chord, 10),
-    "Db:maj", circshift(major_chord, 1),
-    "F:min", circshift(minor_chord, 5),
-    "Ab:7", circshift(seventh_chord, 8),
-    "Ab:maj", circshift(major_chord, 8),
-    "C:min", circshift(minor_chord, 0),
-    "Eb:7", circshift(seventh_chord, 3),
-    "Eb:maj", circshift(major_chord, 3),
-    "G:min", circshift(minor_chord, 7),
-    "Bb:7", circshift(seventh_chord, 10),
-    "Bb:maj", circshift(major_chord, 10),
-    "D:min", circshift(minor_chord, 2),
-    "F:7", circshift(seventh_chord, 5),
-    "F:maj", circshift(major_chord, 5),
-    "A:min", circshift(minor_chord, 9),
-    "C:7", circshift(seventh_chord, 0),
-    "C:maj", circshift(major_chord, 0),
-    "E:min", circshift(minor_chord, 4),
-    "G:7", circshift(seventh_chord, 7),
-    "G:maj", circshift(major_chord, 7),
-    "B:min", circshift(minor_chord, 11),
-    "D:7", circshift(seventh_chord, 2),
-    "D:maj", circshift(major_chord, 2),
-    "F#:min", circshift(minor_chord, 6),
-    "A:7", circshift(seventh_chord, 9),
-    "A:maj", circshift(major_chord, 9),
-    "C#:min", circshift(minor_chord, 1),
-    "E:7", circshift(seventh_chord, 4),
-    "E:maj", circshift(major_chord, 4),
-    "G#:min", circshift(minor_chord, 8),
-    "B:7", circshift(seventh_chord, 11),
-    "B:maj", circshift(major_chord, 11),
-    "D#:min", circshift(minor_chord, 3)
-  )
-
-key_templates <-
-  tribble(
-    ~name, ~template,
-    "Gb:maj", circshift(major_key, 6),
-    "Bb:min", circshift(minor_key, 10),
-    "Db:maj", circshift(major_key, 1),
-    "F:min", circshift(minor_key, 5),
-    "Ab:maj", circshift(major_key, 8),
-    "C:min", circshift(minor_key, 0),
-    "Eb:maj", circshift(major_key, 3),
-    "G:min", circshift(minor_key, 7),
-    "Bb:maj", circshift(major_key, 10),
-    "D:min", circshift(minor_key, 2),
-    "F:maj", circshift(major_key, 5),
-    "A:min", circshift(minor_key, 9),
-    "C:maj", circshift(major_key, 0),
-    "E:min", circshift(minor_key, 4),
-    "G:maj", circshift(major_key, 7),
-    "B:min", circshift(minor_key, 11),
-    "D:maj", circshift(major_key, 2),
-    "F#:min", circshift(minor_key, 6),
-    "A:maj", circshift(major_key, 9),
-    "C#:min", circshift(minor_key, 1),
-    "E:maj", circshift(major_key, 4),
-    "G#:min", circshift(minor_key, 8),
-    "B:maj", circshift(major_key, 11),
-    "D#:min", circshift(minor_key, 3)
-  )
-
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-
-livingonaprayer <-
-  get_tidy_audio_analysis("37ZJ0p5Jm13JPevGcx4SkF?si=9e905a922153474b") |>
-  compmus_align(sections, segments) |>
-  select(sections) |>
-  unnest(sections) |>
-  mutate(
-    pitches =
-      map(segments,
-          compmus_summarise, pitches,
-          method = "mean", norm = "manhattan"
-      )
-  )
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-livingonaprayer |> 
-  compmus_match_pitch_template(
-    chord_templates,         
-    method = "euclidean",  
-    norm = "manhattan"     
-  ) |>
-  ggplot(
-    aes(x = start + duration / 2, width = duration, y = name, fill = d)
-  ) +
-  geom_tile() +
-  scale_fill_viridis_c(guide = "none") +
-  theme_minimal() +
-  labs(x = "Time (s)", y = "")
-
-```
-
-***
-"Livin' On A Prayer" by Bon Jovi is not only one of the most famous songs the band has made, but it is one of the most famous songs of all time. It features a distinctive chord progression that is both recognizable and iconic in the realm of rock music. 
-
-
-Keys as beautiful as a soft November Rain {.storyboard}
-=========================================
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-library(tidyverse)
-library(spotifyr)
-library(compmus)
-library(ggplot2)
-library(dplyr)
-library(conflicted)
-library(forcats)
-library(lubridate)
-library(purrr)
-library(readr)
-library(stringr)
-library(tibble)
-library(tidyr)
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-circshift <- function(v, n) {
-  if (n == 0) v else c(tail(v, n), head(v, -n))
-}
-
-#      C     C#    D     Eb    E     F     F#    G     Ab    A     Bb    B
-major_chord <-
-  c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    0,    0)
-minor_chord <-
-  c(   1,    0,    0,    1,    0,    0,    0,    1,    0,    0,    0,    0)
-seventh_chord <-
-  c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    1,    0)
-
-major_key <-
-  c(6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88)
-minor_key <-
-  c(6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17)
-
-chord_templates <-
-  tribble(
-    ~name, ~template,
-    "Gb:7", circshift(seventh_chord, 6),
-    "Gb:maj", circshift(major_chord, 6),
-    "Bb:min", circshift(minor_chord, 10),
-    "Db:maj", circshift(major_chord, 1),
-    "F:min", circshift(minor_chord, 5),
-    "Ab:7", circshift(seventh_chord, 8),
-    "Ab:maj", circshift(major_chord, 8),
-    "C:min", circshift(minor_chord, 0),
-    "Eb:7", circshift(seventh_chord, 3),
-    "Eb:maj", circshift(major_chord, 3),
-    "G:min", circshift(minor_chord, 7),
-    "Bb:7", circshift(seventh_chord, 10),
-    "Bb:maj", circshift(major_chord, 10),
-    "D:min", circshift(minor_chord, 2),
-    "F:7", circshift(seventh_chord, 5),
-    "F:maj", circshift(major_chord, 5),
-    "A:min", circshift(minor_chord, 9),
-    "C:7", circshift(seventh_chord, 0),
-    "C:maj", circshift(major_chord, 0),
-    "E:min", circshift(minor_chord, 4),
-    "G:7", circshift(seventh_chord, 7),
-    "G:maj", circshift(major_chord, 7),
-    "B:min", circshift(minor_chord, 11),
-    "D:7", circshift(seventh_chord, 2),
-    "D:maj", circshift(major_chord, 2),
-    "F#:min", circshift(minor_chord, 6),
-    "A:7", circshift(seventh_chord, 9),
-    "A:maj", circshift(major_chord, 9),
-    "C#:min", circshift(minor_chord, 1),
-    "E:7", circshift(seventh_chord, 4),
-    "E:maj", circshift(major_chord, 4),
-    "G#:min", circshift(minor_chord, 8),
-    "B:7", circshift(seventh_chord, 11),
-    "B:maj", circshift(major_chord, 11),
-    "D#:min", circshift(minor_chord, 3)
-  )
-
-key_templates <-
-  tribble(
-    ~name, ~template,
-    "Gb:maj", circshift(major_key, 6),
-    "Bb:min", circshift(minor_key, 10),
-    "Db:maj", circshift(major_key, 1),
-    "F:min", circshift(minor_key, 5),
-    "Ab:maj", circshift(major_key, 8),
-    "C:min", circshift(minor_key, 0),
-    "Eb:maj", circshift(major_key, 3),
-    "G:min", circshift(minor_key, 7),
-    "Bb:maj", circshift(major_key, 10),
-    "D:min", circshift(minor_key, 2),
-    "F:maj", circshift(major_key, 5),
-    "A:min", circshift(minor_key, 9),
-    "C:maj", circshift(major_key, 0),
-    "E:min", circshift(minor_key, 4),
-    "G:maj", circshift(major_key, 7),
-    "B:min", circshift(minor_key, 11),
-    "D:maj", circshift(major_key, 2),
-    "F#:min", circshift(minor_key, 6),
-    "A:maj", circshift(major_key, 9),
-    "C#:min", circshift(minor_key, 1),
-    "E:maj", circshift(major_key, 4),
-    "G#:min", circshift(minor_key, 8),
-    "B:maj", circshift(major_key, 11),
-    "D#:min", circshift(minor_key, 3)
-  )
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-novemberrain <-
-  get_tidy_audio_analysis("3YRCqOhFifThpSRFJ1VWFM?si=fba96e4ef0d94883") |>
-  compmus_align(sections, segments) |>
-  select(sections) |>
-  unnest(sections) |>
-  mutate(
-    pitches =
-      map(segments,
-          compmus_summarise, pitches,
-          method = "mean", norm = "manhattan"
-      )
-  )
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-novemberrain |> 
-  compmus_match_pitch_template(
-    key_templates,         
-    method = "euclidean",  
-    norm = "manhattan"     
-  ) |>
-  ggplot(
-    aes(x = start + duration / 2, width = duration, y = name, fill = d)
-  ) +
-  geom_tile() +
-  scale_fill_viridis_c(guide = "none") +
-  theme_minimal() +
-  labs(x = "Time (s)", y = "")
-```
-
-***
-"November Rain" by Guns'N'Roses is a song who's keys are so distinct they can be indetified anywhere, anytime, by anyone. "Novemeber Rain" incorporates various key changes and modulations throughout the song, and analyzing the key changes in a keygram can reveal the song's overall tonal journey, highlighting key moments and transitions that contribute to its emotional impact.
-
- Deciphering the Keys to the Decades {.storyboard}
-=========================================
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-library(tidyverse)
-library(spotifyr)
-library(compmus)
-library(ggplot2)
-library(dplyr)
-library(conflicted)
-library(forcats)
-library(lubridate)
-library(purrr)
-library(readr)
-library(stringr)
-library(tibble)
-library(tidyr)
-library(hrbrthemes)
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-eightys <- get_playlist_audio_features("", "7wFHQHyooUBgtrPqW3iGzk?si=324313907b804876")
-ninetys <- get_playlist_audio_features("", "1CkbyHSuvnAXdosoBW6Vm0?si=9814498c432f487e")
-twothousands <- get_playlist_audio_features("", "7IeVftpjOptptIDThtx3rd?si=833a8a98a01e48f2")
-
-corpus <-
-  bind_rows(
-    eightys |> mutate(category = "80s"),
-    ninetys |> mutate(category = "90s"),
-    twothousands |> mutate(category = "00s")
-  )
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-corpus %>%
-  ggplot(aes(x = key_name, fill = category)) +
-  geom_bar(stat = "count", position = "dodge") +  
-  labs(title = "Histogram of Keys by Decade", x = "Key", y = "Frequency") +
-  scale_fill_manual(values = c("Group A" = "blue", "Group B" = "red", "Group C" = "green")) +
-  facet_wrap(~category, scales = "free") 
-```
-
-***
-Using this visualisation, we can see the most popular keys used in each decade of rock music. An interesting takeway from this is while they stay similar throughout the decade, there are slight differences we can spot.
-
-Tempo throught the Times {.storyboard}
-=========================================
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-library(tidyverse)
-library(spotifyr)
-library(compmus)
-library(ggplot2)
-library(dplyr)
-library(conflicted)
-library(forcats)
-library(lubridate)
-library(purrr)
-library(readr)
-library(stringr)
-library(tibble)
-library(tidyr)
-library(hrbrthemes)
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-eightys <-
-  get_playlist_audio_features(
-    "",
-    "7wFHQHyooUBgtrPqW3iGzk?si=b182e4f2d7b7444c"
-  ) |>
-  slice(1:30) |>
-  add_audio_analysis()
-ninetys <-
-  get_playlist_audio_features(
-    "",
-    "1CkbyHSuvnAXdosoBW6Vm0?si=a25d611128c54f8c"
-  ) |>
-  slice(1:30) |>
-  add_audio_analysis()
-twothousands <-
-  get_playlist_audio_features(
-    "",
-    "7IeVftpjOptptIDThtx3rd?si=0ae8238ab6c148fc"
-  ) |>
-  slice(1:30) |>
-  add_audio_analysis()
-
-corpus <- eightys %>%
-  mutate(genre = "Eighties") %>%
-  bind_rows(ninetys %>% mutate(genre = "Nineties")) %>%
-  bind_rows(twothousands %>% mutate(genre = "Two Thousands"))
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-corpus |>
-  mutate(
-    sections =
-      map(
-        sections,                                    
-        summarise_at,
-        vars(tempo, loudness, duration),             
-        list(section_mean = mean, section_sd = sd)   
-      )
-  ) |>
-  unnest(sections) |>
-  ggplot(
-    aes(
-      x = tempo,
-      y = tempo_section_sd,
-      colour = genre,
-      alpha = loudness
-    )
-  ) +
-  geom_point(aes(size = duration / 60)) +
-  geom_rug() +
-  theme_minimal() +
-  ylim(0, 5) +
-  labs(
-    x = "Mean Tempo (bpm)",
-    y = "SD Tempo",
-    colour = "Genre",
-    size = "Duration (min)",
-    alpha = "Volume (dBFS)"
-  )
-```
-
-***
-
-With this visualisation, we can compare the songs in the corpus from all three decades in regards to their tempo. 
-
-
- The American Idiot shines as bright as a star {.storyboard}
-=========================================
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-library(tidyverse)
-library(spotifyr)
-library(compmus)
-library(ggplot2)
-library(dplyr)
-library(conflicted)
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-
-
-americanidiot <-
-  get_tidy_audio_analysis("6nTiIhLmQ3FWhvrGafw2zj?si=e0fdcac6a10e48c4") |> 
-  compmus_align(beats, segments) |>                     
-  select(beats) |>                                      
-  unnest(beats) |>                                      
-  mutate(
-    pitches =
-      map(segments,
-          compmus_summarise, pitches,
-          method = "rms", norm = "euclidean"              
-      )
-  ) |>
-  mutate(
-    timbre =
-      map(segments,
-          compmus_summarise, timbre,
-          method = "rms", norm = "euclidean"             
-      )
-  )
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-americanidiot |>
-  compmus_gather_timbre() |>
-  ggplot(
-    aes(
-      x = start + duration / 2,
-      width = duration,
-      y = basis,
-      fill = value
-    )
-  ) +
-  geom_tile() +
-  labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
-  scale_fill_viridis_c() +                              
-  theme_classic()
-
-```
-
-***
-Spotify's API looks into multiple variables to analyse their tracks. When looking into what an important outlier would be to visualize as a cepstrogram, two variables stood out: loudness and energy. It just so happens that one sing in my corpus was both the loudest and had the most energy, and that was "American Idiot" by Greenday.This can be visually seen through the cepstrogram by how high the magnitude is in c01, but mainly in c02, throughout the whole songs.
-
-Visualizing the Beat: Exploring Typical vs. Atypical 90s rock {.storyboard}
-=========================================
-
-### Wonderwall by Oasis: Self Similarity Matrix based on Timbre
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-library(tidyverse)
-library(spotifyr)
-library(compmus)
-library(dplyr)
-library(ggplot2)
-```
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-
-wonderwall <-
-  get_tidy_audio_analysis("7ygpwy2qP3NbrxVkHvUhXY?si=3e98096edbf84a7a") |> 
-  compmus_align(beats, segments) |>                     
-  select(beats) |>                                      
-  unnest(beats) |>                                      
-  mutate(
-    pitches =
-      map(segments,
-          compmus_summarise, pitches,
-          method = "rms", norm = "euclidean"              
-      )
-  ) |>
-  mutate(
-    timbre =
-      map(segments,
-          compmus_summarise, timbre,
-          method = "rms", norm = "euclidean"             
-      )
-  )
-```
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-wonderwall |>
-  compmus_self_similarity(timbre, "euclidean") |> 
-  ggplot(
-    aes(
-      x = xstart + xduration / 2,
-      width = xduration,
-      y = ystart + yduration / 2,
-      height = yduration,
-      fill = d
-    )
-  ) +
-  geom_tile() +
-  coord_fixed() +
-  scale_fill_viridis_c(guide = "none") +
-  theme_classic() +
-  labs(x = "", y = "")
-
-```
-
-
-***
-When introducing my corpus, I detailed what may be considered typical and atypical songs from each decade. From the 90s, what can be considered an atypical song of the rock genre would be "Wonderwall" by Oasis. Here, you can see the self similarity matrix based on timbre for the song mentioned. You can see an obvious point of comparison just after the 100 second mark. When listening to the song, this is a point right after the chorus. I believe this stands out when looking at timbre features is because of the isolation of instruments in this segments. You can clearly separate the drums, guitar, and vocals here.
-
-### Wonderwall by Oasis: Self Similarity Matrix based on Chroma
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-library(tidyverse)
-library(spotifyr)
-library(compmus)
-library(dplyr)
-library(ggplot2)
-```
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-
-wonderwall <-
-  get_tidy_audio_analysis("7ygpwy2qP3NbrxVkHvUhXY?si=3e98096edbf84a7a") |> 
-  compmus_align(beats, segments) |>                     
-  select(beats) |>                                      
-  unnest(beats) |>                                      
-  mutate(
-    pitches =
-      map(segments,
-          compmus_summarise, pitches,
-          method = "rms", norm = "euclidean"              
-      )
-  ) |>
-  mutate(
-    timbre =
-      map(segments,
-          compmus_summarise, timbre,
-          method = "rms", norm = "euclidean"             
-      )
-  )
-```
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-wonderwall |>
-  compmus_self_similarity(pitches, "euclidean") |> 
-  ggplot(
-    aes(
-      x = xstart + xduration / 2,
-      width = xduration,
-      y = ystart + yduration / 2,
-      height = yduration,
-      fill = d
-    )
-  ) +
-  geom_tile() +
-  coord_fixed() +
-  scale_fill_viridis_c(guide = "none") +
-  theme_classic() +
-  labs(x = "", y = "")
-
-```
-
-
-***
-Similarly, when looking at the chroma features through a self similarity matrix, this point of comparison also stands out due to the similarities of the pitches.
-
-### Smells Like Teen Spirit by Nirvana: Self Similarity Matrix based on Timbre
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-library(tidyverse)
-library(spotifyr)
-library(compmus)
-library(dplyr)
-library(ggplot2)
-```
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-teenspirit <-
-  get_tidy_audio_analysis("4CeeEOM32jQcH3eN9Q2dGj?si=d7d6bf42c9504ab0") |> 
-  compmus_align(beats, segments) |>                     
-  select(beats) |>                                      
-  unnest(beats) |>                                      
-  mutate(
-    pitches =
-      map(segments,
-          compmus_summarise, pitches,
-          method = "rms", norm = "euclidean"              
-      )
-  ) |>
-  mutate(
-    timbre =
-      map(segments,
-          compmus_summarise, timbre,
-          method = "rms", norm = "euclidean"             
-      )
-  )
-```
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-teenspirit |>
-  compmus_self_similarity(timbre, "euclidean") |> 
-  ggplot(
-    aes(
-      x = xstart + xduration / 2,
-      width = xduration,
-      y = ystart + yduration / 2,
-      height = yduration,
-      fill = d
-    )
-  ) +
-  geom_tile() +
-  coord_fixed() +
-  scale_fill_viridis_c(guide = "none") +
-  theme_classic() +
-  labs(x = "", y = "")
-
-```
-
-
-***
-We discussed what an atypical rock song form the 90s looks like, what about a typical one? For example "Smells Like Teen Spirit" by Nirvana. When looking at the self similarity matrix based on timbre features of the song. You can see the darkest part of the grid is between almost the 160 second mark and the 210 second mark. This is because there is an instrumental section where the instruments clearly stand out and you can dustinguish the differen instruments playing in this segment. On the other hand, when you compare this segment to the one from roughly 25 seconds to 60 seconds, you can see that it is yellow and quite light colored on the matrix, meaning there is little similarity between both segments. If you listen to this passage in the song, it was quite low energy compared the instrument solo later on, which explains the light colors on the matrix.
-
-### Smells Like Teen Spirit by Nirvana: Self Similarity Matrix based on Chroma 
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-library(tidyverse)
-library(spotifyr)
-library(compmus)
-library(dplyr)
-library(ggplot2)
-```
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-teenspirit <-
-  get_tidy_audio_analysis("4CeeEOM32jQcH3eN9Q2dGj?si=d7d6bf42c9504ab0") |> 
-  compmus_align(beats, segments) |>                     
-  select(beats) |>                                      
-  unnest(beats) |>                                      
-  mutate(
-    pitches =
-      map(segments,
-          compmus_summarise, pitches,
-          method = "rms", norm = "euclidean"              
-      )
-  ) |>
-  mutate(
-    timbre =
-      map(segments,
-          compmus_summarise, timbre,
-          method = "rms", norm = "euclidean"             
-      )
-  )
-```
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-teenspirit |>
-  compmus_self_similarity(pitches, "euclidean") |> 
-  ggplot(
-    aes(
-      x = xstart + xduration / 2,
-      width = xduration,
-      y = ystart + yduration / 2,
-      height = yduration,
-      fill = d
-    )
-  ) +
-  geom_tile() +
-  coord_fixed() +
-  scale_fill_viridis_c(guide = "none") +
-  theme_classic() +
-  labs(x = "", y = "")
-
-```
+Concluding Remarks
+==================
 
 
 ***
 
-When looking at the same song's self similarity matrix but based on chroma features this time, you see that more or less, the same passages light up, however the colored "squares" are vary more in this matrix and that's because instead of just comparing the "feel" of the segment, it compares he specific pitch, also known as chroma.
 
-### What can we conclude
+In the beginning, I was expecting to find that generally, 90s and 00s, rock is louder and more energetic that 80s rock, and while the nits and pieces of my analysis does support this thesis, a more in deoth analysis would need to be done to answer this question. 
 
-```{r}
-``` 
+I believe an alysis like this would be interesting due to the general themes linked with rock music in the different decades, and how this manifested into the musical structure.
 
-What we can take away from the analysis of both of these songs, is that it is much easier to look into the differences and similarities of the timbre and chroma of a typical song from the rock genre. When looking at the visualisations of "Smells Like Teen Spirit" by Nirvana, there are certain aspects that stand out to the eye and make it quite easy to analyse. On the other hand, when looking at the visualisations of "Wonderwall" by Oasis, it is much more difficult to find moments that stand out. 
-In my opinion, this is because in the typical song, there is a variation of timbre and chroma, the segments range from high energy and loundness to low energy. In the atypical song, the chroma and pitch of the segments is more or less the same throughout the song, and the same goes for timbre.
-
-
-00s kids likely to go lose hearing in their younger years {.storyboard}
-=========================================
-```{r, echo=FALSE, fig.width=10, fig.height=7}
-
-library(ggplot2)
-library(dplyr)
-library(spotifyr)
-library(tidyverse)
-library(compmus)
-library(conflicted)
-```
-```{r}
-
-eightys <- get_playlist_audio_features("", "7wFHQHyooUBgtrPqW3iGzk?si=324313907b804876")
-ninetys <- get_playlist_audio_features("", "1CkbyHSuvnAXdosoBW6Vm0?si=9814498c432f487e")
-twothousands <- get_playlist_audio_features("", "7IeVftpjOptptIDThtx3rd?si=833a8a98a01e48f2")
-
-corpus <-
-  bind_rows(
-    eightys |> mutate(category = "80s"),
-    ninetys |> mutate(category = "90s"),
-    twothousands |> mutate(category = "00s")
-)
-```
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-corpus |>                   
-  mutate(
-    track.popularity = ifelse(track.popularity < 75, "Little", "Very")
-  ) |>
-  ggplot(                   
-    aes(
-      x = valence,
-      y = danceability,
-      size = loudness,
-      colour = track.popularity
-    )
-  ) +
-  geom_point() +              
-  geom_rug(linewidth = 0.1) +  
-  geom_text(                 
-    aes(
-      x = valence,
-      y = danceability,
-      label = label
-    ),
-    data = 
-      tibble(
-        label = c("Shadow of the Day", "Girl, You'll be a Woman Soon", "I Love Rock 'N Rol"),
-        category = c("00s", "90s", "80s"),
-        valence = c(0.0641, 0.5570, 0.9010),
-        danceability = c(0.534, 0.514, 0.535)
-      ),
-    colour = "black",        
-    size = 3,                 
-    hjust = "left",           
-    vjust = "center",         
-    nudge_x = 0.02            
-  ) +
-  facet_wrap(~ category) +    
-  scale_x_continuous(         
-    limits = c(0, 1),
-    breaks = c(0, 0.50, 1),   
-    minor_breaks = NULL       
-  ) +
-  scale_y_continuous(         
-    limits = c(0, 1),
-    breaks = c(0, 0.50, 1),
-    minor_breaks = NULL
-  ) +
-  scale_colour_brewer(        
-    type = "qual",            
-    palette = "Paired"        
-  ) +
-  scale_size_continuous(      
-    trans = "exp",            
-    guide = "none"            
-  ) +
-  theme_light() +             
-  labs(                       
-    x = "Valence",
-    y = "Danceability",
-    colour = "Popularity"
-  )
-```
-
-  
-***
-The scatter plot I made is divided into three sections, one for each decade, with the Danceability variable on the y-axis and the Valence variable on te x-axis. I was interested to see if the valence of a song made it more danceable. Other variables measured in this scatter plot are Track Popularity, measured by color, where a track is considered "Very" popular if it measured superior to 75, and "Little" popular if it measured inferior to 75. I also measured loudness, which I found interesting to look into for rock music, and that variable is measured by size. From the plot, I can see that 00s rock is louder than both other decades, which was interesting to find out, but not surprising. Valence and Dancebaility don't affect track popularity, and if valence and dasnecability have an effect on one another, it can't be seen from a quick visualisation and would need to be looked into further.
-
- A Happier Time {.storyboard}
-=========================================
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-
-library(ggplot2)
-library(dplyr)
-library(spotifyr)
-library(tidyverse)
-library(compmus)
-library(conflicted)
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-
-rocknroll <-
-  get_tidy_audio_analysis("2Cdvbe2G4hZsnhNMKyGrie?si=ea353a7b64f24f6e") |>
-  select(segments) |>
-  unnest(segments) |>
-  select(start, duration, pitches)
-```
-
-```{r,echo=FALSE, fig.width=10, fig.height=7}
-rocknroll |>
-  mutate(pitches = map(pitches, compmus_normalise, "euclidean")) |>
-  compmus_gather_chroma() |> 
-  ggplot(
-    aes(
-      x = start + duration / 2,
-      width = duration,
-      y = pitch_class,
-      fill = value
-    )
-  ) +
-  geom_tile() +
-  labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
-  theme_minimal() +
-  scale_fill_viridis_c()
-```
-  
-
-*** 
-Out of 90 songs through 3 decade, this song, "I Love Rock 'N Roll" by Joan Jett & the Blackhearts, had the most valence. If you really focus, the 80s generally had happier rock music than the other two decades we're looking into. So, the happied rock song of the 80s, 90s, and the 00s, is no presented as a chromogram.
